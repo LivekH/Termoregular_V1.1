@@ -1,0 +1,1 @@
+﻿# Termoregular1.1
