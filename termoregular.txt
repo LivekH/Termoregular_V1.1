@@ -8,7 +8,7 @@
 #define TFT_RST   8  // Сброс (Reset)
 
 // --- СОЗДАНИЕ ОБЪЕКТОВ ---
-//#define GFX_BL DF_GFX_BL // default backlight pin, you may replace DF_GFX_BL to actual backlight pin
+
 #if defined(DISPLAY_DEV_KIT)
 Arduino_GFX *tft = create_default_Arduino_GFX();
 #else /* !defined(DISPLAY_DEV_KIT) */
