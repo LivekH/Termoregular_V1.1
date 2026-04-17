@@ -233,6 +233,10 @@ tft->print("00:00");
   draw_ICON_HEAT();
   //рисуем иконку разморозки
   draw_ICON_FROST();
+  // Рисуем надписи ON AUTO OFF
+  drawON();
+  drawAUTO();
+  drawOFF();
  }
 void drawTEMP_NEEDLE() { 
 // ---  СТРЕЛКИ ТЕМПЕРАТУРЫ ---
@@ -389,5 +393,11 @@ void drawAUTO(){
 tft->setTextColor(COLOR_WHITE);
 tft->setCursor(140, 220); 
 tft->print("AUTO");
+}
+//Координаты надписи OFF
+void drawOFF(){
+tft->setTextColor(COLOR_WHITE);
+tft->setCursor(240, 220); 
+tft->print("OFF");
 } 
  
