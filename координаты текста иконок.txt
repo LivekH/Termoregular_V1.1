@@ -1,0 +1,72 @@
+// длина дуг влажность
+baseRadius = HUM_NEEDLE_LENGTH (63pix) // длина стрелки влажности
+outerRadius = baseRadius + 22 (63+22)=85pix //внешний радиус серой шкалы
+innerRadius = baseRadius + 12 (63+12)=75pix //внутренний радиус серой шкалы
+
+colorOuterRadius = outerRadius - 10 (85-10)=75pix //внешний радиус цветной шкалы
+colorInnerRadius = innerRadius - 10 (75-10)=65pix //внутренний радиус цветной шкалы
+
+// длина дуг температура 
+baseRadius = TEMP_NEEDLE_LENGTH (77pix) //длина стрелки температуры
+outerRadius = baseRadius + 22 (77+22)=99pix //внешний радиус серой шкалы
+innerRadius = baseRadius + 12 (77+12)=89pix //внутренний радиус серой шкалы
+
+colorOuterRadius = outerRadius - 10 (99-10)=89pix //внешний радиус цветной шкалы
+colorInnerRadius = innerRadius - 10 (89-10)=79pix //внутренний радиус цветной шкалы
+-------------------------------------------------------------------------------------
+//координаты установки индикации времени
+tft->setCursor(15, 50); х=15, у=50
+
+-------------------------------------------------------------------------------------
+//координаты цифровых индикаторов влажности
+void drawHUM_DIGITAL_INDICATOR() {
+ tft->setTextColor(COLOR_WHITE);
+ tft->setTextSize(2); // Размер 2 для подписей
+ tft->setCursor(40, 173);// координаты установки х=40, у=165
+ tft->print("000");
+}
+
+//координаты цифровых индикаторов температуры
+void drawTEMP_DIGITAL_INDICATOR() {
+ tft->setTextColor(COLOR_WHITE);
+ tft->setTextSize(2); // Размер 2 для подписей
+ tft->setCursor(200, 173);// координаты установки х=200, у=165
+ tft->print("000");
+-------------------------------------------------------------------------------------
+//координаты установки иконки нагрева.
+void draw_ICON_HEAT(){
+tft->fillCircle(144, 179, 16, COLOR_DARKGREY);
+tft->setTextSize(2);
+tft->setTextColor(COLOR_WHITE);
+tft->setCursor(139, 173); //(приблизительно по центру)
+tft->print("H");
+}
+//координаты иконки разморозки
+void draw_ICON_FROST() {
+tft->fillCircle(270, 179, 16, COLOR_DARKGREY);
+tft->setTextSize(2);
+tft->setTextColor(COLOR_WHITE);
+tft->setCursor(266, 173); //(приблизительно по центру)
+tft->print("F");
+}  
+-------------------------------------------------------------------------------------
+//Координаты надписи ON
+void drawON(){
+tft->setTextColor(COLOR_WHITE);
+tft->setCursor(40, 220); 
+tft->print("ON");
+} 
+ 
+//Координаты надписи AUTO
+void drawAUTO(){
+tft->setTextColor(COLOR_WHITE);
+tft->setCursor(140, 220); 
+tft->print("AUUTO");
+} 
+
+//Координаты надписи OFF
+void drawOFF(){
+tft->setTextColor(COLOR_WHITE);
+tft->setCursor(240, 220); 
+tft->print("OFF");
+} 
