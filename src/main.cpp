@@ -196,210 +196,157 @@ void setup() {
 }
 
 void loop() {
-   // --- НАСТРОЙКА ПАРАМЕТРОВ ТЕКСТА ---
+   
+ // Прототипы функций для отрисовки
+void drawBackground();
+void drawDinamointerface();
+void drawSetpage();
+void drawTimerPage();
+
+// Загружаем главную страницу с отрисовкой надписей и шкал приборов
+void drawBackground(); {
+  // --- НАСТРОЙКА ПАРАМЕТРОВ ТЕКСТА ---
 // Задаем цвет (белый)
-tft->setTextColor(COLOR_WHITE); 
+  tft->setTextColor(COLOR_WHITE); 
 // Задаем размер. Размер 2 увеличит каждый символ в 2 раза.
-tft->setTextSize(2); 
+  tft->setTextSize(2); 
 // --- ПОЗИЦИОНИРОВАНИЕ И ВЫВОД НАДПИСИ ---
 // Устанавливаем курсор в координаты x=54, y=3 
-tft->setCursor(54, 3); 
+  tft->setCursor(54, 3); 
 // Выводим надпись <Sauna Burovichok>
-tft->print("<Sauna Burovichok>");
+  tft->print("<Sauna Burovichok>");
 // Устанавливаем курсор для вывода надписи время в координаты x=10, y=20
-tft->setCursor(10, 25); 
+  tft->setCursor(10, 25); 
 // Выводим надпись <TIME>
-tft->print("<TIME>");
-// временно размещаем индикацию часов для определения координат
-tft->setCursor(15, 50); 
-// Выводим надпись <00:00>
-tft->print("00:00");
+  tft->print("<TIME>");
+  int centerXh = HUM_CENTER_X;  // Координата X=100 для стрелки влажности
+  int centerYh = HUM_CENTER_Y;  // Координата Y=157 для стрелки влажности
+  int centerXt = TEMP_CENTER_X; // Координата X=205 для стрелки температуры
+  int centerYt = TEMP_CENTER_Y; // Координата Y=157 для стрелки температуры
   
-  // --- ВЫЗЫВАЕМ ФУНКЦИИ ОТРИСОВКИ ПРИБОРОВ ---
-  
-  // Рисуем шкалу влажности в центре (100, 157)
-  drawHumidityScale();
-  // Рисуем шкалу температуры в центре (205, 157)
-  drawTempScale(); 
-    // Рисуем стрелку влажности  (88, 157)
-  drawHUM_NEEDLE();
-  // Рисуем стрелку температуры  (205, 157)
-  drawTEMP_NEEDLE();
-  //Рисуем индикаторы влажности х=40, у=165
-  drawHUM_DIGITAL_INDICATOR();
-  //Рисуем индикаторы температуры х=200, у=165
-  drawTEMP_DIGITAL_INDICATOR();
-  //рисуем иконку нагрева 
-  draw_ICON_HEAT();
-  //рисуем иконку разморозки
-  draw_ICON_FROST();
-  // Рисуем надписи ON AUTO OFF
-  drawON();
-  drawAUTO();
-  drawOFF();
+// --- Отрисовка шкалы влажности
+// --- ОТРИСОВКА СЕРОЙ ОКАНТОВКИ ---
+// Углы для влажности: от 180° до 360°
+  tft->fillArc(centerXh, centerYh, 85, 75, 180, 270, COLOR_GRAY);
 
- }
-void drawTEMP_NEEDLE() { 
-// ---  СТРЕЛКИ ТЕМПЕРАТУРЫ ---
-  // Линия из центра (TEMP_CENTER_X, TEMP_CENTER_Y)
-  // в точку (TEMP_CENTER_X - длина, TEMP_CENTER_Y)
-  tft->drawLine(TEMP_CENTER_X, TEMP_CENTER_Y, TEMP_CENTER_X - TEMP_NEEDLE_LENGTH, TEMP_CENTER_Y, COLOR_YELLOW);
-}
-void drawHUM_NEEDLE() {
-  // ---  СТРЕЛКИ ВЛАЖНОСТИ ---
-  // Линия из центра (HUM_CENTER_X, HUM_CENTER_Y)
-  // в точку (HUM_CENTER_X - длина, HUM_CENTER_Y)
-  tft->drawLine(HUM_CENTER_X, HUM_CENTER_Y, HUM_CENTER_X - HUM_NEEDLE_LENGTH, HUM_CENTER_Y, COLOR_YELLOW);
-}  
-
-// --- БЛОК 3: ШКАЛА ВЛАЖНОСТИ (ВЕРСИЯ 2 - С ИСПОЛЬЗОВАНИЕМ ПЕРЕМЕННЫХ) ---
-void drawHumidityScale() {
-  int centerX = HUM_CENTER_X;
-  int centerY = HUM_CENTER_Y;
-
-  // --- ОТРИСОВКА СЕРОЙ ОКАНТОВКИ ---
-  // Углы для влажности: от 180° до 360°
-  tft->fillArc(centerX, centerY, 85, 75, 180, 270, COLOR_GRAY);
-
-  // --- РАСЧЕТ УГЛОВ ДЛЯ ВЛАЖНОСТИ (22,5 градусов на сектор) ---
-  // Красный сектор (75-100%)
-  tft->fillArc(centerX, centerY, 75, 65, 180, 202.5, COLOR_RED);
+// --- РАСЧЕТ УГЛОВ ДЛЯ ВЛАЖНОСТИ (22,5 градусов на сектор) ---
+// Красный сектор (75-100%)
+  tft->fillArc(centerXh, centerYh, 75, 65, 180, 202.5, COLOR_RED);
   
-  // Желтый сектор (50-75%)
-  tft->fillArc(centerX, centerY, 75, 65, 202.5, 225, COLOR_YELLOW);
+// Желтый сектор (50-75%)
+  tft->fillArc(centerXh, centerYh, 75, 65, 202.5, 225, COLOR_YELLOW);
   
-  // Зеленый сектор (25-50%)
-  tft->fillArc(centerX, centerY, 75, 65, 225, 247.5, COLOR_GREEN);
+// Зеленый сектор (25-50%)
+  tft->fillArc(centerXh, centerYh, 75, 65, 225, 247.5, COLOR_GREEN);
   
-  // Синий сектор (0-25%)
-  tft->fillArc(centerX, centerY, 75, 65, 247.5, 270, COLOR_BLUE); 
+// Синий сектор (0-25%)
+  tft->fillArc(centerXh, centerYh, 75, 65, 247.5, 270, COLOR_BLUE); 
   
-  // --- ОТРИСОВКА МЕТОК И ПОДПИСЕЙ ДЛЯ ВЛАЖНОСТИ ---
+// --- ОТРИСОВКА МЕТОК И ПОДПИСЕЙ ДЛЯ ВЛАЖНОСТИ ---
   int textSizeVal = 1; // Размер текста для значений
 
-  // Задаем цвет меток и текста
-  tft->setTextColor(COLOR_WHITE);
-  tft->setTextSize(textSizeVal);
-  tft->setCursor(18, 152);
-  tft->print(0);
-  tft->setCursor(36, 97);
-  tft->print(50);
-  tft->setCursor(89, 73);
-  tft->print(100);
-  
-  // --- НАСТРОЙКА ТЕКСТА ДЛЯ СТАТИЧНЫХ ПОДПИСЕЙ ---
-tft->setTextColor(COLOR_WHITE);
-tft->setTextSize(2); // Размер 2 для подписей
+// Задаем цвет меток и текста
+    tft->setTextColor(COLOR_WHITE);
+    tft->setTextSize(textSizeVal);
+    tft->setCursor(18, 152);
+    tft->print(0);
+    tft->setCursor(36, 97);
+    tft->print(50);
+    tft->setCursor(89, 73);
+    tft->print(100);
 
-// --- ПОДПИСЬ ДЛЯ ВЛАЖНОСТИ ---
-// Координаты (80, 165), //х=80, у=173
-tft->setCursor(80, 173);
-tft->print("Hu");
-
-}
-
-// --- БЛОК 4: ШКАЛА ТЕМПЕРАТУРЫ ---
-void drawTempScale() {
-   int centerX = TEMP_CENTER_X;
-   int centerY = TEMP_CENTER_Y;
-
+   // --- ПОДПИСЬ ДЛЯ ВЛАЖНОСТИ ---
+   // Координаты (80, 165), //х=80, у=173
+   tft->setCursor(80, 173);
+   tft->setTextSize(2);
+   tft->print("Hu");
+   
+   // --- Отрисовка шкалы температуры
    // --- ОТРИСОВКА СЕРОЙ ОКАНТОВКИ ---
    // Используем синтаксис углов: от 180 до 360 градусов
-   tft->fillArc(centerX, centerY, 99, 89, 180, 360, COLOR_GRAY);
+   tft->fillArc(centerXt, centerYt, 99, 89, 180, 360, COLOR_GRAY);
 
-  
    // --- ВЕРНЫЙ РАСЧЕТ УГЛОВ ---
    // Вся шкала: от 180 до 360 градусов. Итого: 180 градусов.
    // Делим на 4 сектора: 180 / 4 = 45 градусов на сектор.
    
    // Синий сектор (0% - 25%) - Начинаем с 180° 
-   tft->fillArc(centerX, centerY, 89, 79, 180, 225, COLOR_BLUE);
+   tft->fillArc(centerXt, centerYt, 89, 79, 180, 225, COLOR_BLUE);
    
    // Зеленый сектор (25% - 50%) - Следующие 45 градусов
-   tft->fillArc(centerX, centerY, 89, 79, 225, 270, COLOR_GREEN);
+   tft->fillArc(centerXt, centerYt, 89, 79, 225, 270, COLOR_GREEN);
    
    // Желтый сектор (50% - 75%)
-   tft->fillArc(centerX, centerY, 89, 79, 270, 315, COLOR_YELLOW);
+   tft->fillArc(centerXt, centerYt, 89, 79, 270, 315, COLOR_YELLOW);
    
    // Красный сектор (75% - 100%) - Заканчиваем на 360°
-   tft->fillArc(centerX, centerY, 89, 79, 315, 360, COLOR_RED);
+   tft->fillArc(centerXt, centerYt, 89, 79, 315, 360, COLOR_RED);
    
    // --- ОТРИСОВКА МЕТОК И ПОДПИСЕЙ ДЛЯ ТЕМПЕРАТУРЫ ---
-   // int markLength = 12;
-    int textSizeVal = 1; // Увеличим размер текста до 1, чтобы цифры были крупнее и читаемее
   //координаты меток температуры
-  tft->setTextColor(COLOR_WHITE);
-  tft->setTextSize(textSizeVal);
-  tft->setCursor(108, 152);
-  tft->print(0);
-  tft->setCursor(130, 87);
-  tft->print(30);
-  tft->setCursor(199, 59);
-  tft->print(60);
-  tft->setCursor(269, 85);
-  tft->print(90);
-  tft->setCursor(286, 152);
-  tft->print(120);  
+    tft->setTextColor(COLOR_WHITE);
+    tft->setTextSize(textSizeVal);
+    tft->setCursor(108, 152);
+    tft->print(0);
+    tft->setCursor(130, 87);
+    tft->print(30);
+    tft->setCursor(199, 59);
+    tft->print(60);
+    tft->setCursor(269, 85);
+    tft->print(90);
+    tft->setCursor(286, 152);
+    tft->print(120);  
+     
+      // --- ПОДПИСЬ ДЛЯ ТЕМПЕРАТУРЫ ---
+  // Давай временно поставим подпись для температуры рядом с её шкалой
+  // Координаты (205, 190) - под центром шкалы температуры
+     tft->setTextColor(COLOR_WHITE);
+     tft->setTextSize(2); // Размер 2 для подписей
+     tft->setCursor(225, 173);// координаты установки х=230, у=173
+     tft->print("C");
+}
    
-    // --- ПОДПИСЬ ДЛЯ ТЕМПЕРАТУРЫ ---
-// Давай временно поставим подпись для температуры рядом с её шкалой
-// Координаты (205, 190) - под центром шкалы температуры
-tft->setTextColor(COLOR_WHITE);
-tft->setTextSize(2); // Размер 2 для подписей
-tft->setCursor(225, 173);// координаты установки х=230, у=173
-tft->print("C");
-}
+  void drawDinamointerface(); {
 
-//координаты цифровых индикаторов влажности
-void drawHUM_DIGITAL_INDICATOR() {
- tft->setTextColor(COLOR_WHITE);
- tft->setTextSize(2); // Размер 2 для подписей
- tft->setCursor(40, 173);// координаты установки х=40, у=173
- tft->print("000");
-}
-
-//координаты цифровых индикаторов температуры
-void drawTEMP_DIGITAL_INDICATOR() {
- tft->setTextColor(COLOR_WHITE);
- tft->setTextSize(2); // Размер 2 для подписей
- tft->setCursor(185, 173);// координаты установки х=185, у=173
- tft->print("000");
-} 
-
-//координаты установки иконки нагрева.
-void draw_ICON_HEAT(){
-tft->fillCircle(144, 179, 16, COLOR_DARKGREY);
-tft->setTextSize(2);
-tft->setTextColor(COLOR_WHITE);
-tft->setCursor(139, 173); //(приблизительно по центру)
-tft->print("H");
-}
-//координаты иконки разморозки
-void draw_ICON_FROST() {
-tft->fillCircle(270, 179, 16, COLOR_DARKGREY);
-tft->setTextSize(2);
-tft->setTextColor(COLOR_WHITE);
-tft->setCursor(266, 173); //(приблизительно по центру)
-tft->print("F");
-}
-//Координаты надписи ON
-void drawON() {
-tft->setTextColor(COLOR_WHITE);
-tft->setCursor(40, 220); 
-tft->print("ON");
-} 
- 
-//Координаты надписи AUTO
-void drawAUTO(){
-tft->setTextColor(COLOR_WHITE);
-tft->setCursor(140, 220); 
-tft->print("AUTO");
-} 
-
-//Координаты надписи OFF
-void drawOFF(){
-tft->setTextColor(COLOR_WHITE);
-tft->setCursor(240, 220); 
-tft->print("OFF");
-}
- 
+// временно размещаем индикацию часов для определения координат!!!! 
+      tft->setCursor(15, 50); 
+// Выводим надпись <00:00>
+      tft->print("00:00");
+      
+      // ---  СТРЕЛКИ ТЕМПЕРАТУРЫ ---
+  // Линия из центра (TEMP_CENTER_X, TEMP_CENTER_Y)
+  // в точку (TEMP_CENTER_X - длина, TEMP_CENTER_Y)
+      tft->drawLine(TEMP_CENTER_X, TEMP_CENTER_Y, TEMP_CENTER_X - TEMP_NEEDLE_LENGTH, TEMP_CENTER_Y, COLOR_YELLOW);
+      
+      // ---  СТРЕЛКИ ВЛАЖНОСТИ ---
+  // Линия из центра (HUM_CENTER_X, HUM_CENTER_Y)
+  // в точку (HUM_CENTER_X - длина, HUM_CENTER_Y)
+      tft->drawLine(HUM_CENTER_X, HUM_CENTER_Y, HUM_CENTER_X - HUM_NEEDLE_LENGTH, HUM_CENTER_Y, COLOR_YELLOW);
+      
+  //координаты цифровых индикаторов влажности
+      tft->setTextColor(COLOR_WHITE);
+      tft->setTextSize(2);    // Размер 2 для подписей
+      tft->setCursor(40, 173);// координаты установки х=40, у=173
+      tft->print("000");
+      
+   //координаты цифровых индикаторов температуры
+       tft->setTextColor(COLOR_WHITE);
+       tft->setTextSize(2);     // Размер 2 для подписей
+       tft->setCursor(185, 173);// координаты установки х=185, у=173
+       tft->print("000");
+       
+       //координаты установки иконки нагрева.
+        tft->fillCircle(144, 179, 16, COLOR_DARKGREY);
+        tft->setTextSize(2);
+        tft->setTextColor(COLOR_WHITE);
+        tft->setCursor(139, 173); //(приблизительно по центру)
+        tft->print("H");
+        
+        //координаты иконки разморозки
+        tft->fillCircle(270, 179, 16, COLOR_DARKGREY);
+        tft->setTextSize(2);
+        tft->setTextColor(COLOR_WHITE);
+        tft->setCursor(266, 173); //(приблизительно по центру)
+        tft->print("F");
+  }
+}   
