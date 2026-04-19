@@ -347,5 +347,21 @@ void drawBackground(); {
         tft->setTextColor(COLOR_WHITE);
         tft->setCursor(266, 173); //(приблизительно по центру)
         tft->print("F");
+
+        //Координаты надписи ON
+tft->setTextColor(COLOR_WHITE);
+tft->setCursor(40, 220); 
+tft->print("ON");
+ 
+//Координаты надписи AUTO
+tft->setTextColor(COLOR_WHITE);
+tft->setCursor(140, 220); 
+tft->print("AUTO");
+
+//Координаты надписи OFF
+tft->setTextColor(COLOR_WHITE);
+tft->setCursor(240, 220); 
+tft->print("OFF");
+  
   }
 }   
