@@ -363,4 +363,130 @@ tft->setTextColor(COLOR_WHITE);
 tft->setCursor(240, 220); 
 tft->print("OFF");
   } 
-}   
+ delay(5000);
+ 
+  // Рисуем страницу настроек
+ void drawSetpage(); {
+  tft->fillScreen(COLOR_BACKGROUND);
+  tft->setTextColor(COLOR_WHITE); 
+  tft->setTextSize(2);
+
+  // --- ЗАГОЛОВОК СТРАНИЦЫ ---
+  // Координаты (80, 10) ставят текст примерно по центру сверху
+  tft->setCursor(150, 10); 
+  tft->print("SETTING");
+
+  // --- ПУНКТЫ МЕНЮ (Статические надписи) ---
+  // Координаты (20, Y) создают отступ слева
+  tft->setCursor(20, 50); 
+  tft->print("Set Time:");
+
+  tft->setCursor(20, 80);
+  tft->print("Set Temperature:");
+
+  tft->setCursor(20, 110);
+  tft->print("Set Hysteresis:");
+
+  tft->setCursor(20, 140);
+  tft->print("Set Timer:");
+
+
+  // --- ДИНАМИЧЕСКИЕ ЗНАЧЕНИЯ (Нули) ---
+  // Выводим их в тех же строках, но со смещением по оси X
+  // Координата X=180 ставит значения ближе к правому краю
+  
+  // Время (00:00)
+  tft->setCursor(180, 50);
+  tft->print("00:00");
+
+  // Температура (000)
+  tft->setCursor(180, 80);
+  tft->print("000");
+
+  // Гистерезис (00)
+  tft->setCursor(180, 110);
+  tft->print("00");
+}
+ delay(5000); 
+
+void drawTimerPage();{
+  tft->fillScreen(COLOR_BACKGROUND);
+  tft->setTextColor(COLOR_WHITE); 
+  tft->setTextSize(2);
+
+  // --- ЗАГОЛОВОК СТРАНИЦЫ ---
+  tft->setCursor(70, 10); 
+  tft->print("TIMER SETTINGS");
+
+
+  // --- ТАЙМЕР 1 ---
+  tft->setCursor(20, 50);
+  tft->print("Timer 1");
+
+  tft->setCursor(40, 80);
+  tft->print("Timer ON:");
+
+  tft->setCursor(40, 110);
+  tft->print("Timer OFF:");
+
+  tft->setCursor(40, 140);
+  tft->print("Timer Memory/Clear");
+
+
+   // --- ТАЙМЕР 2 ---
+   tft->setCursor(160, 50);
+   tft->print("Timer 2");
+ 
+   tft->setCursor(180, 80);
+   tft->print("Timer ON:");
+ 
+   tft->setCursor(180, 110);
+   tft->print("Timer OFF:");
+ 
+   tft->setCursor(180, 140);
+   tft->print("Timer Memory/Clear");
+
+
+    // --- ТАЙМЕРЫ З И 4 (ниже по вертикали) ---
+    // Таймеры З и 4 мы размещаем под первыми двумя
+
+    // --- ТАЙМЕР З ---
+    tft->setCursor(20, 170);
+    tft->print("Timer З");
+
+    tft->setCursor(40, 200);
+    tft->print("Timer ON:");
+
+    // --- ТАЙМЕР 4 ---
+    tft->setCursor(160, 170);
+    tft->print("Timer 4");
+ 
+    tft->setCursor(180, 200);
+    tft->print("Timer ON:");
+
+
+   // --- ДИНАМИЧЕСКИЕ ЗНАЧЕНИЯ (Нули) ДЛЯ ВСЕХ ТАЙМЕРОВ ---
+   
+   // Timer ON (для всех)
+   tft->setCursor(180, 80); // Timer1 ON
+   tft->print("00:00");
+   
+   tft->setCursor(320, 80); // Timer2 ON (вторая колонка)
+   tft->print("00:00");
+   
+   tft->setCursor(180, 200); // Timer3 ON (третья строка)
+   tft->print("00:00");
+   
+   // Timer OFF (для всех)
+   tft->setCursor(180, 110); // Timer1 OFF
+   tft->print("00:00");
+   
+   tft->setCursor(320, 110); // Timer2 OFF
+   tft->print("00:00");
+   
+   tft->setCursor(180, 230); // Timer3 OFF
+   // Оставим координату Y=234 для последнего элемента, чтобы не налезало на "Clear"
+}
+delay(5000);
+tft->fillScreen(COLOR_BACKGROUND);
+}
