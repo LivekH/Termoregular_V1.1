@@ -227,16 +227,16 @@ void drawBackground(); {
 
 // --- РАСЧЕТ УГЛОВ ДЛЯ ВЛАЖНОСТИ (22,5 градусов на сектор) ---
 // Красный сектор (75-100%)
-  tft->fillArc(HUM_CENTER_X, HUM_CENTER_Y, 75, 65, 180, 202.5, COLOR_RED);
+  tft->fillArc(HUM_CENTER_X, HUM_CENTER_Y, 75, 65, 180, 202, COLOR_RED);
   
 // Желтый сектор (50-75%)
-  tft->fillArc(HUM_CENTER_X, HUM_CENTER_Y, 75, 65, 202.5, 225, COLOR_YELLOW);
+  tft->fillArc(HUM_CENTER_X, HUM_CENTER_Y, 75, 65, 204, 224, COLOR_YELLOW);
   
 // Зеленый сектор (25-50%)
-  tft->fillArc(HUM_CENTER_X, HUM_CENTER_Y, 75, 65, 225, 247.5, COLOR_GREEN);
+  tft->fillArc(HUM_CENTER_X, HUM_CENTER_Y, 75, 65, 226, 246, COLOR_GREEN);
   
 // Синий сектор (0-25%)
-  tft->fillArc(HUM_CENTER_X, HUM_CENTER_Y, 75, 65, 247.5, 270, COLOR_BLUE); 
+  tft->fillArc(HUM_CENTER_X, HUM_CENTER_Y, 75, 65, 248, 270, COLOR_BLUE); 
   
 // --- ОТРИСОВКА МЕТОК И ПОДПИСЕЙ ДЛЯ ВЛАЖНОСТИ ---
   int textSizeVal = 1; // Размер текста для значений
@@ -267,16 +267,16 @@ void drawBackground(); {
    // Делим на 4 сектора: 180 / 4 = 45 градусов на сектор.
    
    // Синий сектор (0% - 25%) - Начинаем с 180° 
-   tft->fillArc(TEMP_CENTER_X, TEMP_CENTER_Y, 89, 79, 180, 225, COLOR_BLUE);
+   tft->fillArc(TEMP_CENTER_X, TEMP_CENTER_Y, 89, 79, 180, 224, COLOR_BLUE);
    
    // Зеленый сектор (25% - 50%) - Следующие 45 градусов
-   tft->fillArc(TEMP_CENTER_X, TEMP_CENTER_Y, 89, 79, 225, 270, COLOR_GREEN);
+   tft->fillArc(TEMP_CENTER_X, TEMP_CENTER_Y, 89, 79, 226, 269, COLOR_GREEN);
    
    // Желтый сектор (50% - 75%)
-   tft->fillArc(TEMP_CENTER_X, TEMP_CENTER_Y, 89, 79, 270, 315, COLOR_YELLOW);
+   tft->fillArc(TEMP_CENTER_X, TEMP_CENTER_Y, 89, 79, 271, 314, COLOR_YELLOW);
    
    // Красный сектор (75% - 100%) - Заканчиваем на 360°
-   tft->fillArc(TEMP_CENTER_X, TEMP_CENTER_Y, 89, 79, 315, 360, COLOR_RED);
+   tft->fillArc(TEMP_CENTER_X, TEMP_CENTER_Y, 89, 79, 316, 360, COLOR_RED);
    
    // --- ОТРИСОВКА МЕТОК И ПОДПИСЕЙ ДЛЯ ТЕМПЕРАТУРЫ ---
   //координаты меток температуры
@@ -298,9 +298,8 @@ void drawBackground(); {
   // Координаты (205, 190) - под центром шкалы температуры
      tft->setTextColor(COLOR_WHITE);
      tft->setTextSize(2); // Размер 2 для подписей
-     //попробуй раскомментировать следующие 2 строки...
      tft->setCursor(221, 173);// координаты установки х=235, у=173
-     tft->print((char)248);
+     tft->print((char)248);   // символ градусов!
      tft->setCursor(233, 173);// координаты установки х=230, у=173
      tft->print("C");
      
@@ -349,7 +348,7 @@ void drawBackground(); {
         tft->setCursor(266, 173); //(приблизительно по центру)
         tft->print("F");
 
-        //Координаты надписи ON
+//Координаты надписи ON
 tft->setTextColor(COLOR_WHITE);
 tft->setCursor(40, 220); 
 tft->print("ON");
@@ -363,6 +362,5 @@ tft->print("AUTO");
 tft->setTextColor(COLOR_WHITE);
 tft->setCursor(240, 220); 
 tft->print("OFF");
-  
-  }
+  } 
 }   
