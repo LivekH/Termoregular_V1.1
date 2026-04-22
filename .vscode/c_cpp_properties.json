@@ -8,7 +8,8 @@
         {
             "name": "PlatformIO",
             "includePath": [
-            
+                "c:/Users/livek/Desktop/Termoregular_V1.1/include",
+                "c:/Users/livek/Desktop/Termoregular_V1.1/src",
                 "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
                 "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
                 "C:/Users/livek/.platformio/packages/framework-arduino-avr/cores/arduino",
@@ -17,11 +18,11 @@
                 "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                 "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
                 "C:/Users/livek/Desktop/Termoregular_V1.1/libraries for the project/Adafruit_SHT31-master",
-				"C:/Users/livek/Desktop/Termoregular_V1.1/libraries for the project/Arduino_GFX-master/src",
-				"C:/Users/livek/Desktop/Termoregular_V1.1/libraries for the project/Encoder",
-				"C:/Users/livek/Desktop/Termoregular_V1.1/libraries for the project/RTClib-master/src",
-				"C:/Users/livek/Desktop/Termoregular_V1.1/libraries for the project",
-				""
+                "C:/Users/livek/Desktop/Termoregular_V1.1/libraries for the project/Arduino_GFX-master/src",
+                "C:/Users/livek/Desktop/Termoregular_V1.1/libraries for the project/Encoder",
+                "C:/Users/livek/Desktop/Termoregular_V1.1/libraries for the project/RTClib-master/src",
+                "C:/Users/livek/Desktop/Termoregular_V1.1/libraries for the project",
+                ""
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
