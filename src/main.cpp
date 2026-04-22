@@ -365,6 +365,7 @@ tft->print("OFF");
   } 
 delay(5000);
 
+
   // Рисуем страницу настроек
  void drawSetpage(); {
   tft->fillScreen(COLOR_BACKGROUND);
@@ -389,24 +390,13 @@ delay(5000);
   tft->print(":");
   tft->print("00"); // Устанавливаем минуты вращением энкодера, после установки по нажатию кнопки энкодера сохроняем в RTC
 
-
-
-}
   
- delay(5000);
 
-void drawSetpage(); {
-  tft->fillScreen(COLOR_BACKGROUND);
-  tft->setTextColor(COLOR_WHITE); 
-  tft->setTextSize(1);
-
-  // --- ЗАГОЛОВОК СТРАНИЦЫ ---
-  // Координаты (80, 10) ставят текст примерно по центру сверху
-  tft->setCursor(80, 10); 
-  tft->print("SETTING");
+  
 
   // Устанавливаем температуру
   tft->setCursor(20, 40);
+  tft->setTextColor(COLOR_WHITE);
   tft->print("Set Temperature:");
 //Устанавливаем температуру вращением энкодера, по нажатию кнопки сохроняем в EPROM 
   tft->print("000");
