@@ -439,7 +439,7 @@ delay(5000);
   void drawTimerPage() ;{
      tft->fillScreen(COLOR_BACKGROUND);
      tft->setTextColor(COLOR_WHITE); 
-     tft->setTextSize(1);
+     tft->setTextSize(2);
 
      // --- ЗАГОЛОВОК СТРАНИЦЫ ---
      tft->setCursor(70, 10); 
@@ -465,7 +465,7 @@ tft->setTextColor(COLOR_WHITE); //при наведении на пункт ме
      tft->print("00"); // установка минут для включения после подтверждения заносим в EPROM 
 
 // Отключение по таймеру
-     tft->setCursor(40, 60);
+     tft->setCursor(20, 60);
      tft->print("Timer OFF:");
      tft->setCursor(20, 40);
      tft->setTextColor(COLOR_WHITE); //при установке часов  меняем цвет на жёлтый
@@ -477,10 +477,10 @@ tft->setTextColor(COLOR_WHITE); //при наведении на пункт ме
      tft->print("00"); // установка минут для включения после подтверждения заносим в EPROM 
 
 // запись в EPROM/ удаление из EPROM 
-     tft->setCursor(40, 80);
+     tft->setCursor(20, 80);
      tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
      tft->print("Timer Memory/Clear");
-
+/*
 
      // --- ТАЙМЕР 2 ---
      tft->setCursor(160, 50);
@@ -538,6 +538,6 @@ tft->setTextColor(COLOR_WHITE); //при наведении на пункт ме
   }
   delay (5000);
   tft->fillScreen(COLOR_BACKGROUND);
-
+/*
 
 }   
