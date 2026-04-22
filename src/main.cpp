@@ -447,16 +447,38 @@ delay(5000);
 
 
      // --- ТАЙМЕР 1 ---
-     tft->setCursor(20, 50);
+     
+     tft->setCursor(20, 20);
+     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
      tft->print("Timer 1");
 
-     tft->setCursor(40, 80);
+     // Меню таймера
+     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
+     tft->setCursor(20, 40);
      tft->print("Timer ON:");
+     tft->setTextColor(COLOR_WHITE); //при установке часов  меняем цвет на жёлтый
+     tft->print("00"); // Установка часов включения после подтверждения заносим в EPROM 
 
-     tft->setCursor(40, 110);
+tft->setTextColor(COLOR_WHITE);// Цвет для ":"
+     tft->print(":");
+tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
+     tft->print("00"); // установка минут для включения после подтверждения заносим в EPROM 
+
+// Отключение по таймеру
+     tft->setCursor(40, 60);
      tft->print("Timer OFF:");
+     tft->setCursor(20, 40);
+     tft->setTextColor(COLOR_WHITE); //при установке часов  меняем цвет на жёлтый
+     tft->print("00"); // Установка часов включения после подтверждения заносим в EPROM 
 
-     tft->setCursor(40, 140);
+tft->setTextColor(COLOR_WHITE);// Цвет для ":"
+     tft->print(":");
+tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
+     tft->print("00"); // установка минут для включения после подтверждения заносим в EPROM 
+
+// запись в EPROM/ удаление из EPROM 
+     tft->setCursor(40, 80);
+     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
      tft->print("Timer Memory/Clear");
 
 
