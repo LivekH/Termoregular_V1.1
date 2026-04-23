@@ -84,6 +84,7 @@ Encoder myEnc(ENCODER_PIN_A, ENCODER_PIN_B); // Создаем объект эн
       byte timer3 = 0; // Таймер 3 по умолчанию выключен
       byte timer4 = 0; // Таймер 4 по умолчанию выключен
 
+       
 //Блок 2 установки
 void setup() {
       // --- 1. ИНИЦИАЛИЗАЦИЯ ВСЕХ КОМПОНЕНТОВ ---
@@ -196,12 +197,6 @@ void setup() {
 }
 
 void loop() {
-   
- // Прототипы функций для отрисовки
-void drawBackground();
-void drawDinamointerface();
-void drawSetpage();
-void drawTimerPage();
 
 // Загружаем главную страницу с отрисовкой надписей и шкал приборов
 void drawBackground(); {
@@ -301,8 +296,7 @@ void drawBackground(); {
      tft->print((char)248);   // символ градусов!
      tft->setCursor(233, 173);// координаты установки х=230, у=173
      tft->print("C");
-     
-}
+     }
    
   void drawDinamointerface(); {
 
@@ -361,8 +355,10 @@ void drawBackground(); {
       tft->setTextColor(COLOR_WHITE);
       tft->setCursor(240, 210); 
       tft->print("OFF");
+      delay(5000);
   } 
-delay(5000);
+
+
 
   // Рисуем страницу настроек
  void drawSetpage(); {
@@ -416,11 +412,12 @@ delay(5000);
      // Устанавливаем надпись выход на "drawBackground" на главнуй страницу
      tft->setCursor(20, 115);
      tft->print("EXIT");
+     delay(5000);
 } 
 
-delay(5000);
 
-  void drawTimerPage();{
+
+  void drawTimerpage(); {
      tft->fillScreen(COLOR_BACKGROUND);
      tft->setTextColor(COLOR_WHITE); 
      tft->setTextSize(2);
@@ -556,10 +553,11 @@ delay(5000);
      // Устанавливаем надпись выход на "drawBackground" на главнуй страницу
      tft->setCursor(148, 200);
      tft->print("EXIT");
-  
-  }
+     
   delay (5000);
   tft->fillScreen(COLOR_BACKGROUND);
+  }
+  
 
 
 }   
