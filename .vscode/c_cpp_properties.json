@@ -7,12 +7,14 @@
                 "c:/Users/livek/Desktop/Termoregular_V1.1/src",
                 "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
                 "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
-                "${workspaceFolder}/**",
                 "C:/Users/livek/.platformio/packages/framework-arduino-avr/cores/arduino",
                 "C:/Users/livek/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs",
                 "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/HID/src",
                 "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
-                "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src"
+                "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+				"${workspaceFolder}/**",
+                "",
+                
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
