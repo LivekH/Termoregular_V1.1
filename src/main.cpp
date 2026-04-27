@@ -71,8 +71,19 @@ Encoder myEnc(ENCODER_PIN_A, ENCODER_PIN_B); // Создаем объект эн
 
 // --- КОНСТАНТЫ ДЛЯ ПУНКТОВ МЕНЮ ---
 // Временно Мы предполагаем, что "EXIT" — это 6-й пункт в меню настроек
-#define MENU_ITEM_EXIT 6   // Пункт "EXIT" имеет номер 6
-#define MENU_ITEM_AUTO 2    // Пункт "AUTO" имеет номер 2
+// --- НОВЫЙ БЛОК: КОНСТАНТЫ ДЛЯ ПУНКТОВ МЕНЮ ---
+#define MENU_ITEM_SET_TIME 1
+#define MENU_ITEM_SET_TEMP 2
+#define MENU_ITEM_SET_HYST 3
+#define MENU_ITEM_SET_FROST 4
+#define MENU_ITEM_SET_TIMER 5
+#define MENU_ITEM_EXIT 6
+
+#define MENU_ITEM_TIMER_1 1
+#define MENU_ITEM_TIMER_2 2
+#define MENU_ITEM_TIMER_3 3
+#define MENU_ITEM_TIMER_4 4
+#define MENU_ITEM_EXIT_TIMER 5
 
       // Режим работы по умолчанию
       String activeMode = "AUTO"; 
@@ -97,24 +108,26 @@ Encoder myEnc(ENCODER_PIN_A, ENCODER_PIN_B); // Создаем объект эн
      // ---  ПЕРЕМЕННЫЕ ДЛЯ ЛОГИКИ ---
 
 // Флаг для отрисовки фона (твоя идея)
-bool isStaticDrawn = false; 
+bool isStaticDrawn = false;
 
 // Переменная для хранения текущей страницы
 String currentPage = "MAIN_PAGE"; // Начинаем на главной странице
 
-// --- ПЕРЕМЕННЫЕ ДЛЯ ЛОГИКИ ВЫБОРА ПУНКТОВ МЕНЮ ---
-bool isSelecting = false; // Флаг: находимся ли мы в режиме выбора пункта меню
-int selectedMenuItem = 0; // Переменная: какой пункт меню сейчас выбран (подсвечен)
-
-// --- ПЕРЕМЕННЫЕ ДЛЯ КНОПКИ ЭНКОДЕРА ---
+// Переменные для отслеживания нажатий кнопки энкодера
 unsigned long buttonPressTimer = 0; // Таймер для отсчета 5 секунд
 bool isButtonPressedFlag = false;  // Флаг, что кнопка физически нажата
 const long holdTime = 5000;         // Время удержания для перехода (5000 мс = 5 сек)
 
-// ---  ПЕРЕМЕННЫЕ ДЛЯ БЕЗДЕЙСТВИЯ ---
+// Переменные для отслеживания бездействия пользователя
 unsigned long inactivityTimer = 0; // Таймер для отслеживания последнего действия
 const long inactivityTime = 10000; // Время бездействия в мс (10000 мс = 10 сек)
 
+// Переменные для логики работы с меню
+bool isSelecting = false; // Флаг: находимся ли мы в режиме выбора пункта меню
+
+// Используем BYTE для экономии памяти, как ты и предложил.
+byte selectedMenuItem = MENU_ITEM_SET_TIME; // Текущий выбранный пункт в SET_PAGE
+byte selectedTimerItem = MENU_ITEM_TIMER_1; // Текущий выбранный пункт в SET_TIMER
 
        
 //Блок 2 установки
@@ -229,106 +242,77 @@ void setup() {
 }
 
 void loop() {
-  // --- 1. ПРОВЕРКА БЕЗДЕЙСТВИЯ (В САМОМ НАЧАЛЕ LOOP!) ---
-  // Если мы находимся на любой из страниц настроек...
+  // --- 1. ПРОВЕРКА БЕЗДЕЙСТВИЯ ---
   if (currentPage == "SET_PAGE" || currentPage == "SET_TIMER") {
-      // ...и с момента последнего действия прошло больше 10 секунд...
       if (millis() - inactivityTimer > inactivityTime) {
-          currentPage = "MAIN_PAGE"; // ...возвращаемся на главный экран
-          isStaticDrawn = false;    // Сбрасываем флаг, чтобы перерисовать фон
-          // return здесь не нужен, чтобы код ниже успел выполниться
+          currentPage = "MAIN_PAGE";
+          isStaticDrawn = false;
       }
   }
 
   // --- 2. ЧТЕНИЕ СОСТОЯНИЯ КНОПКИ ---
   int buttonState = digitalRead(ENCODER_BUTTON_PIN);
 
-
-  // --- 3. ПРОВЕРКА НАЖАТИЯ И УДЕРЖАНИЯ (> 5 сек) ---
-  // Эта проверка работает и на главной странице, и в меню настроек!
-  if (buttonState == LOW) { // Кнопка НАЖАТА
+  // --- 3. ПРОВЕРКА УДЕРЖАНИЯ (> 5 сек) ---
+  if (buttonState == LOW) {
       if (!isButtonPressedFlag) {
-          // Это НОВОЕ нажатие. Запускаем таймер.
           isButtonPressedFlag = true;
-          buttonPressTimer = millis(); 
+          buttonPressTimer = millis();
       }
-      
-      // Проверяем, прошло ли 5 секунд с момента НАЧАЛА нажатия
       if (millis() - buttonPressTimer >= holdTime) {
-          
-          // --- ЛОГИКА ПЕРЕХОДА ЗАВИСИТ ОТ ТЕКУЩЕЙ СТРАНИЦЫ ---
           if (currentPage == "MAIN_PAGE") {
               currentPage = "SET_PAGE";
-              isStaticDrawn = false; 
+              isStaticDrawn = false;
+              return; // Выходим, чтобы не сработал код для клика
           }
           else if (currentPage == "SET_PAGE" || currentPage == "SET_TIMER") {
               currentPage = "MAIN_PAGE";
-              isStaticDrawn = false; 
+              isStaticDrawn = false;
+              return;
           }
-          // Выходим из этого блока "если", чтобы не сработал код для клика ниже
-          return; 
       }
   }
-  
-  else { // Кнопка ОТПУЩЕНА
+  else { // Кнопка отпущена
       if (isButtonPressedFlag) {
-          // Это было кратковременное нажатие (КЛИК)
           isButtonPressedFlag = false;
           unsigned long pressDuration = millis() - buttonPressTimer;
           
+          // --- 4. ПРОВЕРКА КОРОТКОГО КЛИКА ---
           if (pressDuration < holdTime) {
-              // --- ЛОГИКА ДЛЯ КОРОТКОГО НАЖАТИЯ (КЛИК) ---
-              
-              if (currentPage == "MAIN_PAGE") {
-                  // На главной странице клик включает режим выбора ON/AUTO/OFF
-                  isSelecting = true;
-                  selectedMenuItem = MENU_ITEM_AUTO; // Начинаем с AUTO
-              }
-              else if (currentPage == "SET_PAGE") {
-                  // В меню настроек клик по пункту "EXIT"
-                  if (isSelecting && selectedMenuItem == MENU_ITEM_EXIT) {
+              if (currentPage == "SET_PAGE") {
+                  // Логика клика в меню настроек
+                  if (selectedMenuItem == MENU_ITEM_EXIT) {
                       currentPage = "MAIN_PAGE";
                       isStaticDrawn = false;
                       isSelecting = false;
                   }
-                  // Здесь будет логика для входа в подпункты (Set Time, Set Temp)
+                  else if (selectedMenuItem == MENU_ITEM_SET_TIMER) {
+                      currentPage = "SET_TIMER";
+                      isStaticDrawn = false;
+                      selectedTimerItem = MENU_ITEM_TIMER_1;
+                  }
+              }
+              else if (currentPage == "SET_TIMER") {
+                  if (selectedTimerItem == MENU_ITEM_EXIT_TIMER) {
+                      currentPage = "MAIN_PAGE";
+                      isStaticDrawn = false;
+                  }
               }
           }
       }
-      
-      // --- 4. СБРОС ТАЙМЕРА БЕЗДЕЙСТВИЯ ---
-      // Каждый раз, когда кнопка отпущена (было нажатие), сбрасываем таймер
-      inactivityTimer = millis(); 
-  }
-
-  
-  // --- 5. ВЫПОЛНЕНИЕ ЛОГИКИ ТЕКУЩЕЙ СТРАНИЦЫ ---
-  
-  if (currentPage == "MAIN_PAGE") {
-      if (!isStaticDrawn) { 
-          drawBackground();
-          isStaticDrawn = true; 
-      }
-      drawDinamointerface(); 
-      
-      // --- СБРОС ТАЙМЕРА ПРИ ВРАЩЕНИИ ЭНКОДЕРА НА ГЛАВНОМ ЭКРАНЕ ---
-      // Здесь будет код, который при вращении энкодера делает:
-      inactivityTimer = millis(); 
-      
-  } 
-  else if (currentPage == "SET_PAGE") {
-      drawSetpage();
-      inactivityTimer = millis(); // Сброс таймера при любой активности в меню
-      
-      // Логика выбора пунктов меню будет здесь
-      // (изменение selectedMenuItem при вращении энкодера)
-      
-  }
-  else if (currentPage == "SET_TIMER") {
-      drawTimerpage();
+      // --- 5. СБРОС ТАЙМЕРА БЕЗДЕЙСТВИЯ ---
       inactivityTimer = millis();
   }
+
+  // --- 6. ЛОГИКА ПЕРЕМЕЩЕНИЯ КУРСОРА (ВРАЩЕНИЕ ЭНКОДЕРА) ---
+  // Это будет отдельный блок кода, который меняет selectedMenuItem
+  // или selectedTimerItem в зависимости от текущей страницы.
+  
+  // --- КОНЕЦ ЛОГИКИ: loop() ЗДЕСЬ ЗАКАНЧИВАЕТСЯ ---
+  // Здесь НЕ БУДЕТ ВЫЗОВОВ drawSetpage() или drawTimerpage().
 }
+
+
 
 // Загружаем главную страницу с отрисовкой надписей и шкал приборов
 void drawBackground() {
