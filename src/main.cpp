@@ -109,7 +109,10 @@ Encoder myEnc(ENCODER_PIN_A, ENCODER_PIN_B); // Создаем объект эн
 
 // Флаг для отрисовки фона (твоя идея)
 bool isStaticDrawn = false;
-
+// флаг для отрисовки страницы настройки
+bool isSetPageDrawn = false;
+// Флаг для страницы таймеров 
+bool isStaticDrawn = false;
 // Переменная для хранения текущей страницы
 String currentPage = "MAIN_PAGE"; // Начинаем на главной странице
 
@@ -242,76 +245,125 @@ void setup() {
 }
 
 void loop() {
-  // --- 1. ПРОВЕРКА БЕЗДЕЙСТВИЯ ---
-  if (currentPage == "SET_PAGE" || currentPage == "SET_TIMER") {
-      if (millis() - inactivityTimer > inactivityTime) {
-          currentPage = "MAIN_PAGE";
-          isStaticDrawn = false;
-      }
-  }
+  // --- 1. СБРОС ТАЙМЕРА БЕЗДЕЙСТВИЯ ПРИ ЛЮБОЙ АКТИВНОСТИ ---
+  // (Это нужно, чтобы таймер не сработал, пока мы взаимодействуем с меню)
+  // Мы будем сбрасывать его при вращении энкодера и нажатии кнопки.
+  // Пока просто оставим здесь для логики переходов.
 
-  // --- 2. ЧТЕНИЕ СОСТОЯНИЯ КНОПКИ ---
+  // --- 2. ПРОВЕРКА КНОПКИ ДЛЯ ПЕРЕХОДА МЕЖДУ СТРАНИЦАМИ ---
+  
+  // Читаем состояние кнопки один раз в начале цикла
   int buttonState = digitalRead(ENCODER_BUTTON_PIN);
 
-  // --- 3. ПРОВЕРКА УДЕРЖАНИЯ (> 5 сек) ---
-  if (buttonState == LOW) {
+  // --- ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (> 5 сек) ---
+  if (buttonState == LOW) { // Кнопка НАЖАТА
       if (!isButtonPressedFlag) {
+          // Это новое нажатие. Запускаем таймер.
           isButtonPressedFlag = true;
-          buttonPressTimer = millis();
+          buttonPressTimer = millis(); 
       }
+      
+      // Проверяем, прошло ли 5 секунд с момента НАЧАЛА нажатия
       if (millis() - buttonPressTimer >= holdTime) {
+          // --- ЛОГИКА ПЕРЕХОДА ---
           if (currentPage == "MAIN_PAGE") {
               currentPage = "SET_PAGE";
-              isStaticDrawn = false;
-              return; // Выходим, чтобы не сработал код для клика
+              isStaticDrawn = false; 
+              isSetPageDrawn = false; // Сбрасываем флаг для новой страницы
           }
           else if (currentPage == "SET_PAGE" || currentPage == "SET_TIMER") {
               currentPage = "MAIN_PAGE";
-              isStaticDrawn = false;
-              return;
+              isStaticDrawn = false; 
+              isSetPageDrawn = false;
           }
+          // Выходим из loop(), чтобы на следующем шаге отрисовать новую страницу
+          return; 
       }
   }
-  else { // Кнопка отпущена
+  
+  else { // Кнопка ОТПУЩЕНА
       if (isButtonPressedFlag) {
+          // Это было кратковременное нажатие (КЛИК)
           isButtonPressedFlag = false;
           unsigned long pressDuration = millis() - buttonPressTimer;
           
-          // --- 4. ПРОВЕРКА КОРОТКОГО КЛИКА ---
+          // --- ЛОГИКА КОРОТКОГО КЛИКА ---
           if (pressDuration < holdTime) {
               if (currentPage == "SET_PAGE") {
-                  // Логика клика в меню настроек
-                  if (selectedMenuItem == MENU_ITEM_EXIT) {
+                  // --- ВЫХОД ЧЕРЕЗ ПУНКТ МЕНЮ EXIT ---
+                  if (isSelecting && selectedMenuItem == MENU_ITEM_EXIT) {
                       currentPage = "MAIN_PAGE";
                       isStaticDrawn = false;
-                      isSelecting = false;
+                      isSetPageDrawn = false;
+                      isSelecting = false; // Выходим из режима выбора
+                      return;
                   }
-                  else if (selectedMenuItem == MENU_ITEM_SET_TIMER) {
-                      currentPage = "SET_TIMER";
-                      isStaticDrawn = false;
-                      selectedTimerItem = MENU_ITEM_TIMER_1;
-                  }
+                  // Здесь будет логика для входа в подпункты (Set Time, Set Temp)
               }
               else if (currentPage == "SET_TIMER") {
-                  if (selectedTimerItem == MENU_ITEM_EXIT_TIMER) {
+                  if (isSelecting && selectedTimerItem == MENU_ITEM_EXIT_TIMER) {
                       currentPage = "MAIN_PAGE";
                       isStaticDrawn = false;
+                      isSetPageDrawn = false;
+                      isSelecting = false;
+                      return;
                   }
               }
           }
       }
-      // --- 5. СБРОС ТАЙМЕРА БЕЗДЕЙСТВИЯ ---
-      inactivityTimer = millis();
+      // Сбрасываем таймер бездействия при отпускании кнопки
+      inactivityTimer = millis(); 
   }
 
-  // --- 6. ЛОГИКА ПЕРЕМЕЩЕНИЯ КУРСОРА (ВРАЩЕНИЕ ЭНКОДЕРА) ---
-  // Это будет отдельный блок кода, который меняет selectedMenuItem
-  // или selectedTimerItem в зависимости от текущей страницы.
   
-  // --- КОНЕЦ ЛОГИКИ: loop() ЗДЕСЬ ЗАКАНЧИВАЕТСЯ ---
-  // Здесь НЕ БУДЕТ ВЫЗОВОВ drawSetpage() или drawTimerpage().
-}
+  // --- 3. ВЫПОЛНЕНИЕ ЛОГИКИ ТЕКУЩЕЙ СТРАНИЦЫ ---
+  
+  if (currentPage == "MAIN_PAGE") {
+      // Логика ГЛАВНОЙ СТРАНИЦЫ
+      
+      // Отрисовка фона (только один раз)
+      if (!isStaticDrawn) { 
+          drawBackground();
+          isStaticDrawn = true; 
+      }
+      
+      // Отрисовка динамических элементов (стрелки, цифры)
+      drawDinamointerface(); 
+      
+      // Здесь будет код для обновления данных с датчиков
+      
+  } 
+  
+  else if (currentPage == "SET_PAGE") {
+      // Логика СТРАНИЦЫ НАСТРОЕК
+      
+      // --- ОТРИСОВКА СТРАНИЦЫ (ТОЛЬКО ОДИН РАЗ ПРИ ВХОДЕ) ---
+      if (!isSetPageDrawn) {
+          drawSetpage();
+          isSetPageDrawn = true; 
+      }
+      
+      // --- ОЖИДАНИЕ СИГНАЛА ОТ ЭНКОДЕРА ---
+      // Здесь будет код, который ждет вращения или нажатия.
+      // Пока он пуст, программа просто "замирает" на этом шаге.
+      
+  } 
+  
+  else if (currentPage == "SET_TIMER") {
+      // Логика СТРАНИЦЫ ТАЙМЕРОВ
+      
+      if (!isSetTimerDrawn) { // Используем новый флаг для этой страницы
+          drawTimerpage();
+          isSetTimerDrawn = true;
+      }
+      
+      // Ожидание сигнала от энкодера
+      
+  }
 
+  // Небольшая задержка, чтобы снизить нагрузку на процессор и избежать мерцания
+  delay(50); 
+}
 
 
 // Загружаем главную страницу с отрисовкой надписей и шкал приборов
