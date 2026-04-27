@@ -139,7 +139,7 @@ void setup() {
       // --- 1. ИНИЦИАЛИЗАЦИЯ ВСЕХ КОМПОНЕНТОВ ---
       // Инициализируем дисплей
       tft->begin();
-      tft->setRotation(1);
+      tft->setRotation(3);
 
       // Инициализируем шину I2C для датчиков
       Wire.begin();
@@ -150,7 +150,7 @@ void setup() {
 
       // Инициализируем пины
       pinMode(RELAY_PIN, OUTPUT);
-      digitalWrite(RELAY_PIN, LOW); // Реле выключено по умолчанию
+      digitalWrite(RELAY_PIN, HIGH); // Реле выключено по умолчанию
       pinMode(ENCODER_BUTTON_PIN, INPUT_PULLUP);
 
       // --- 2. ЧТЕНИЕ ДАННЫХ ИЗ EEPROM ---
