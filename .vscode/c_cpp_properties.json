@@ -1,38 +1,43 @@
+//
+// !!! WARNING !!! AUTO-GENERATED FILE!
+// PLEASE DO NOT MODIFY IT AND USE "platformio.ini":
+// https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags
+//
 {
     "configurations": [
         {
             "name": "PlatformIO",
             "includePath": [
-                "c:/Users/livek/Desktop/Termoregular_V1.1/include",
-                "c:/Users/livek/Desktop/Termoregular_V1.1/src",
-                "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
-                "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
-                "C:/Users/livek/.platformio/packages/framework-arduino-avr/cores/arduino",
-                "C:/Users/livek/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs",
-                "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/HID/src",
-                "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
-                "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
-				"${workspaceFolder}/**",
-                "",
+                "g:/V1/Termoregular_V1.1/include",
+                "g:/V1/Termoregular_V1.1/src",
+                "C:/Users/itach/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                "C:/Users/itach/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                "C:/Users/itach/.platformio/packages/framework-arduino-avr/cores/arduino",
+                "C:/Users/itach/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs",
+                "C:/Users/itach/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                "C:/Users/itach/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                "C:/Users/itach/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                "${workspaceFolder}/**",
+                ""
                 
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "c:/Users/livek/Desktop/Termoregular_V1.1/include",
-                    "c:/Users/livek/Desktop/Termoregular_V1.1/src",
-                    "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
-                    "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
-                    "C:/Users/livek/.platformio/packages/framework-arduino-avr/cores/arduino",
-                    "C:/Users/livek/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs",
-                    "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/HID/src",
-                    "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
-                    "C:/Users/livek/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                    "g:/V1/Termoregular_V1.1/include",
+                    "g:/V1/Termoregular_V1.1/src",
+                    "C:/Users/itach/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                    "C:/Users/itach/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                    "C:/Users/itach/.platformio/packages/framework-arduino-avr/cores/arduino",
+                    "C:/Users/itach/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs",
+                    "C:/Users/itach/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                    "C:/Users/itach/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                    "C:/Users/itach/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
                     ""
                 ]
             },
             "defines": [
-                "PLATFORMIO=60119",
+                "PLATFORMIO=60120",
                 "ARDUINO_AVR_NANO",
                 "F_CPU=16000000L",
                 "ARDUINO_ARCH_AVR",
@@ -42,7 +47,7 @@
             ],
             "cStandard": "gnu11",
             "cppStandard": "gnu++11",
-            "compilerPath": "C:/Users/livek/.platformio/packages/toolchain-atmelavr/bin/avr-gcc.exe",
+            "compilerPath": "C:/Users/itach/.platformio/packages/toolchain-atmelavr/bin/avr-gcc.exe",
             "compilerArgs": [
                 "-mmcu=atmega328p",
                 ""
