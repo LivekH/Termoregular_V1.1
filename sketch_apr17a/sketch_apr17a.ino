@@ -13,9 +13,9 @@
 // --- 2. ОПРЕДЕЛЯЕМ (ASSIGN) ВСЕ ПИНЫ ---
 
 // --- ПИНЫ ДИСПЛЕЯ ---
-#define TFT_CS    10  // Выбор кристалла (Chip Select)
-#define TFT_DC    9   // Команда/Данные (Data/Command)
-#define TFT_RST   8   // Сброс (Reset)
+//#define TFT_CS    10  // Выбор кристалла (Chip Select)
+//#define TFT_DC    9   // Команда/Данные (Data/Command)
+//#define TFT_RST   8   // Сброс (Reset)
 
 // --- ПИНЫ ДЛЯ УПРАВЛЕНИЯ НАГРЕВОМ/ОХЛАЖДЕНИЕМ ---
 #define RELAY_PIN 5    // Пин, на котором подключено реле управления
@@ -139,7 +139,7 @@ void setup() {
       // --- 1. ИНИЦИАЛИЗАЦИЯ ВСЕХ КОМПОНЕНТОВ ---
       // Инициализируем дисплей
       tft->begin();
-      tft->setRotation(1);
+      tft->setRotation(3);
 
       // Инициализируем шину I2C для датчиков
       Wire.begin();
@@ -150,7 +150,7 @@ void setup() {
 
       // Инициализируем пины
       pinMode(RELAY_PIN, OUTPUT);
-      digitalWrite(RELAY_PIN, LOW); // Реле выключено по умолчанию
+      digitalWrite(RELAY_PIN, HIGH); // Реле выключено по умолчанию
       pinMode(ENCODER_BUTTON_PIN, INPUT_PULLUP);
 
       // --- 2. ЧТЕНИЕ ДАННЫХ ИЗ EEPROM ---
