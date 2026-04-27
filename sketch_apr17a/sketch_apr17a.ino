@@ -13,9 +13,9 @@
 // --- 2. ОПРЕДЕЛЯЕМ (ASSIGN) ВСЕ ПИНЫ ---
 
 // --- ПИНЫ ДИСПЛЕЯ ---
-#define TFT_CS    10  // Выбор кристалла (Chip Select)
-#define TFT_DC    9   // Команда/Данные (Data/Command)
-#define TFT_RST   8   // Сброс (Reset)
+//#define TFT_CS    10  // Выбор кристалла (Chip Select)
+//#define TFT_DC    9   // Команда/Данные (Data/Command)
+//#define TFT_RST   8   // Сброс (Reset)
 
 // --- ПИНЫ ДЛЯ УПРАВЛЕНИЯ НАГРЕВОМ/ОХЛАЖДЕНИЕМ ---
 #define RELAY_PIN 5    // Пин, на котором подключено реле управления
