@@ -8,16 +8,16 @@
 #include <Wire.h>               // Библиотека для работы с шиной I2C (нужна для SHT31 и DS3231)
 #include <Adafruit_SHT31.h>     // Библиотека для датчика температуры и влажности SHT31
 #include <RTClib.h>             // Библиотека для часов реального времени DS3231
-#include <Encoder.h>            // Библиотека для работы с энкодером
+#include <GyverEncoder.h>           // Библиотека для работы с энкодером
 
 // --- 2. ОПРЕДЕЛЯЕМ (ASSIGN) ВСЕ ПИНЫ ---
 // --- ПИНЫ ДЛЯ УПРАВЛЕНИЯ НАГРЕВОМ/ОХЛАЖДЕНИЕМ ---
 #define RELAY_PIN 5    // Пин, на котором подключено реле управления
 
 // --- ПИНЫ ДЛЯ ЭНКОДЕРА ---
-#define ENCODER_PIN_A 2  // Пин A энкодера (CLK)
-#define ENCODER_PIN_B 3  // Пин B энкодера (DT)
-#define ENCODER_BUTTON_PIN 4 // Пин кнопки энкодера
+#define CLK 2
+#define DT 3
+#define SW 4
 
 // --- ПИНЫ ДЛЯ ДАТЧИКОВ И ЧАСОВ (I2C) ---
 // Для SHT31 и DS3231 используются стандартные пины I2C на Arduino Nano: A4 (SDA) и A5 (SCL)
@@ -38,7 +38,7 @@ Arduino_GFX *tft = new Arduino_ILI9341(bus, DF_GFX_RST, 0 /* rotation */, false 
 // Создаем объекты для датчиков и энкодера
 Adafruit_SHT31 shtSensor = Adafruit_SHT31(); // Создаем объект датчика SHT31
 RTC_DS3231 rtc;                                 // Создаем объект часов DS3231
-Encoder myEnc(ENCODER_PIN_A, ENCODER_PIN_B); // Создаем объект энкодера
+Encoder enc1(CLK, DT, SW); // Создаем объект энкодера
 
 // --- 4. ОПРЕДЕЛЯЕМ КОНСТАНТЫ (КООРДИНАТЫ, РАЗМЕРЫ) ---
 
@@ -146,8 +146,9 @@ void setup() {
       // Инициализируем пины
       pinMode(RELAY_PIN, OUTPUT);
       digitalWrite(RELAY_PIN, HIGH); // Реле выключено по умолчанию
-      pinMode(ENCODER_BUTTON_PIN, INPUT_PULLUP);
-
+      // --- НАСТРОЙКА ЭНКОДЕРА ---
+      enc1.setType(TYPE2); // Настраиваем тип энкодера (самый распространенный)
+    
       // --- 2. ЧТЕНИЕ ДАННЫХ ИЗ EEPROM ---
       // Читаем сохраненный режим работы (по адресу 0)
       char savedMode = EEPROM.read(0);
@@ -241,90 +242,88 @@ void setup() {
 }
 
 void loop() {
-  // --- 1. ЧТЕНИЕ СОСТОЯНИЯ КНОПКИ И ЭНКОДЕРА ---
-  // Читаем кнопку и энкодер на КАЖДОМ ШАГЕ loop()
-  int buttonState = digitalRead(ENCODER_BUTTON_PIN);
-  long newPos = myEnc.read();
-  
-  // Сброс таймера бездействия при вращении энкодера
-  if (newPos != 0) {
-      myEnc.write(0);
-      inactivityTimer = millis();
-  }
+  // --- 1. ОБЩИЙ ОПРОС ЭНКОДЕРА ---
+  // Эта строка ОБЯЗАТЕЛЬНА для работы библиотеки GyverEncoder.
+  // Она должна вызываться на каждом шаге loop.
+  enc1.tick(); 
 
   // --- 2. ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
-  // Возвращаемся на главный экран, если находимся в меню
-  if (currentPage == "SET_PAGE" || currentPage == "SET_TIMER") {
+  // Если мы находимся в меню и нет активности более 10 секунд,
+  // возвращаемся на главный экран.
+  if (currentPage != "MAIN_PAGE") {
+      // Таймер сбрасывается внутри библиотеки при вызове enc1.tick()
+      // при обнаружении движения или клика, но наша проверка остается.
       if (millis() - inactivityTimer > inactivityTime) {
           currentPage = "MAIN_PAGE";
           isStaticDrawn = false;
           isSetPageDrawn = false;
           isSetTimerDrawn = false;
           tft->fillScreen(COLOR_BACKGROUND);
-          // return здесь не нужен, чтобы код ниже успел выполниться
       }
   }
 
-  // --- 3. ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (> 5 сек) ---
-  if (buttonState == LOW) { // Кнопка НАЖАТА
-      if (!isButtonPressedFlag) {
-          isButtonPressedFlag = true;
-          buttonPressTimer = millis();
-      }
-      if (millis() - buttonPressTimer >= holdTime) {
-          if (currentPage == "MAIN_PAGE") {
-              currentPage = "SET_PAGE";
-              isStaticDrawn = false;
-              isSetPageDrawn = false;
-              // return здесь не нужен
-          }
-          else if (currentPage == "SET_PAGE") {
-              currentPage = "MAIN_PAGE";
-              isStaticDrawn = false;
-              isSetPageDrawn = false;
-              // return здесь не нужен
-          }
-      }
-  }
-  else { // Кнопка ОТПУЩЕНА
-      isButtonPressedFlag = false;
-  }
-
-
-  // --- 4. ВЫПОЛНЕНИЕ ЛОГИКИ ТЕКУЩЕЙ СТРАНИЦЫ ---
+  // --- 3. ВЫПОЛНЕНИЕ ЛОГИКИ ТЕКУЩЕЙ СТРАНИЦЫ ---
 
   if (currentPage == "MAIN_PAGE") {
       // --- ОТРИСОВКА ГЛАВНОЙ СТРАНИЦЫ ---
+      
+      // Отрисовка статического фона (только один раз)
       if (!isStaticDrawn) { 
           drawBackground();
           isStaticDrawn = true; 
       }
+      
+      // Отрисовка динамических элементов (стрелки, цифры)
       drawDinamointerface(); 
+      
       delay(50);
   }
   
   else if (currentPage == "SET_PAGE") {
-      // --- ОТРИСОВКА СТРАНИЦЫ НАСТРОЕК ---
+      // --- ОТРИСОВКА И ЛОГИКА СТРАНИЦЫ НАСТРОЕК ---
+      
+      // Отрисовка страницы настроек (только один раз при входе)
       if (!isSetPageDrawn) {
           drawSetpage();
           isSetPageDrawn = true; 
-          inactivityTimer = millis(); 
+          inactivityTimer = millis(); // Сброс таймера при входе в меню
       }
-
-      // --- НОВАЯ ЛОГИКА: ПЕРЕМЕЩЕНИЕ КУРСОРА ---
-      newPos = myEnc.read(); // Читаем энкодер снова для этой страницы
-      if (newPos != 0) {
-          myEnc.write(0);
-          inactivityTimer = millis(); // Сброс таймера
-
-          selectedMenuItem += (newPos > 0) ? 1 : -1; // Двигаем курсор
-          Serial.println("Encoder moved!");
-          Serial.println(newPos); // Выводим значение
-          // Цикличность меню (от 1 до 6)
-          if (selectedMenuItem > MENU_ITEM_EXIT) selectedMenuItem = MENU_ITEM_SET_TIME;
-          if (selectedMenuItem < MENU_ITEM_SET_TIME) selectedMenuItem = MENU_ITEM_EXIT;
+      
+      // --- ЛОГИКА ПЕРЕМЕЩЕНИЯ КУРСОРА (ИСПРАВЛЕННАЯ) ---
+      
+      // Проверка вращения ВПРАВО
+      if (enc1.isRight()) {
+          inactivityTimer = millis(); // Сбрасываем таймер бездействия
           
-          drawSetpage(); // Перерисовываем страницу для смены цвета
+          selectedMenuItem++; // Двигаем курсор вниз по списку
+          if (selectedMenuItem > MENU_ITEM_EXIT) {
+              selectedMenuItem = MENU_ITEM_SET_TIME; // Цикличность: за последним идет первый
+          }
+          drawSetpage(); // Перерисовываем страницу для смены цвета выделения
+      }
+      
+      // Проверка вращения ВЛЕВО
+      if (enc1.isLeft()) {
+          inactivityTimer = millis(); // Сбрасываем таймер бездействия
+          
+          selectedMenuItem--; // Двигаем курсор вверх по списку
+          if (selectedMenuItem < MENU_ITEM_SET_TIME) {
+              selectedMenuItem = MENU_ITEM_EXIT; // Цикличность: перед первым идет последний
+          }
+          drawSetpage(); // Перерисовываем страницу для смены цвета выделения
+      }
+      
+      // --- ЛОГИКА КЛИКА ПО КНОПКЕ ---
+      if (enc1.isClick()) {
+          // Если выбран пункт "EXIT", возвращаемся на главный экран
+          if (selectedMenuItem == MENU_ITEM_EXIT) {
+              currentPage = "MAIN_PAGE";
+              isStaticDrawn = false;
+              isSetPageDrawn = false;
+              tft->fillScreen(COLOR_BACKGROUND);
+          }
+          
+          // Здесь будет логика для входа в подпункты (например, Set Time)
       }
       
       delay(50);
