@@ -2,22 +2,22 @@
 // --- 1. ПОДКЛЮЧАЕМ ВСЕ НЕОБХОДИМЫЕ БИБЛИОТЕКИ ---
 
 #include <Arduino_GFX_Library.h> // Библиотека для работы с дисплеем
-#include <EEPROM.h>             // Библиотека для работы с энергонезависимой памятью (EEPROM)
+#include <EEPROM.h>              // Библиотека для работы с энергонезависимой памятью (EEPROM)
 
 // --- БИБЛИОТЕКИ ДЛЯ ДАТЧИКОВ И КОМПОНЕНТОВ ---
 #include <Wire.h>               // Библиотека для работы с шиной I2C (нужна для SHT31 и DS3231)
 #include <Adafruit_SHT31.h>     // Библиотека для датчика температуры и влажности SHT31
 #include <RTClib.h>             // Библиотека для часов реального времени DS3231
-#include <Encoder.h>            // Библиотека для работы с энкодером
+#include <GyverEncoder.h>       // Библиотека для работы с энкодером
 
 // --- 2. ОПРЕДЕЛЯЕМ (ASSIGN) ВСЕ ПИНЫ ---
 // --- ПИНЫ ДЛЯ УПРАВЛЕНИЯ НАГРЕВОМ/ОХЛАЖДЕНИЕМ ---
-#define RELAY_PIN 5    // Пин, на котором подключено реле управления
+#define RELAY_PIN 5             // Пин, на котором подключено реле управления
 
 // --- ПИНЫ ДЛЯ ЭНКОДЕРА ---
-#define ENCODER_PIN_A 2  // Пин A энкодера (CLK)
-#define ENCODER_PIN_B 3  // Пин B энкодера (DT)
-#define ENCODER_BUTTON_PIN 4 // Пин кнопки энкодера
+#define CLK 2
+#define DT 3
+#define SW 4
 
 // --- ПИНЫ ДЛЯ ДАТЧИКОВ И ЧАСОВ (I2C) ---
 // Для SHT31 и DS3231 используются стандартные пины I2C на Arduino Nano: A4 (SDA) и A5 (SCL)
@@ -38,7 +38,7 @@ Arduino_GFX *tft = new Arduino_ILI9341(bus, DF_GFX_RST, 0 /* rotation */, false 
 // Создаем объекты для датчиков и энкодера
 Adafruit_SHT31 shtSensor = Adafruit_SHT31(); // Создаем объект датчика SHT31
 RTC_DS3231 rtc;                                 // Создаем объект часов DS3231
-Encoder myEnc(ENCODER_PIN_A, ENCODER_PIN_B); // Создаем объект энкодера
+Encoder enc1(CLK, DT, SW); // Создаем объект энкодера
 
 // --- 4. ОПРЕДЕЛЯЕМ КОНСТАНТЫ (КООРДИНАТЫ, РАЗМЕРЫ) ---
 
@@ -64,7 +64,6 @@ Encoder myEnc(ENCODER_PIN_A, ENCODER_PIN_B); // Создаем объект эн
 #define COLOR_DARKGREY   tft->color565(168, 168, 168)//Темно серый
 
 // --- КОНСТАНТЫ ДЛЯ ПУНКТОВ МЕНЮ ---
-// Временно Мы предполагаем, что "EXIT" — это 6-й пункт в меню настроек
 // --- НОВЫЙ БЛОК: КОНСТАНТЫ ДЛЯ ПУНКТОВ МЕНЮ ---
 #define MENU_ITEM_SET_TIME 1
 #define MENU_ITEM_SET_TEMP 2
@@ -83,7 +82,7 @@ Encoder myEnc(ENCODER_PIN_A, ENCODER_PIN_B); // Создаем объект эн
       String activeMode = "AUTO"; 
 
       // Значения температуры по умолчанию
-      float targetTemperature = 0.0; 
+      float targetTemperature = 0; 
       int hysteresis = 2; // Гистерезис по умолчанию
 
       // --- 6. ЗАДАЕМ ЗНАЧЕНИЯ ПО УМОЛЧАНИЮ (ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ) ---
@@ -94,46 +93,48 @@ Encoder myEnc(ENCODER_PIN_A, ENCODER_PIN_B); // Создаем объект эн
       byte timer3 = 0; // Таймер 3 по умолчанию выключен
       byte timer4 = 0; // Таймер 4 по умолчанию выключен
 
-     void drawBackground();
-     void drawDinamointerface();
-     void drawSetpage();
-     void drawTimerpage();
+      
+      void drawBackground();
+      void drawDinamointerface();
+      void drawSetpage();
+      void drawTimerpage();
 
-     // ---  ПЕРЕМЕННЫЕ ДЛЯ ЛОГИКИ ---
+      // ---  ПЕРЕМЕННЫЕ ДЛЯ ЛОГИКИ ---
 
-// Флаг для отрисовки фона (твоя идея)
-bool isStaticDrawn = false;
-// флаг для отрисовки страницы настройки
-bool isSetPageDrawn = false;
-// Флаг для страницы таймеров 
-bool isSetTimerDrawn = false;
+      // Флаг для отрисовки фона (твоя идея)
+      bool isStaticDrawn = false;
+      // флаг для отрисовки страницы настройки
+      bool isSetPageDrawn = false;
+      // Флаг для страницы таймеров 
+      bool isSetTimerDrawn = false;
 
-// Переменная для хранения текущей страницы
-String currentPage = "MAIN_PAGE"; // Начинаем на главной странице
+      // Переменная для хранения текущей страницы
+      String currentPage = "MAIN_PAGE"; // Начинаем на главной странице
 
-// Переменные для отслеживания нажатий кнопки энкодера
-unsigned long buttonPressTimer = 0; // Таймер для отсчета 5 секунд
-bool isButtonPressedFlag = false;  // Флаг, что кнопка физически нажата
-const long holdTime = 5000;         // Время удержания для перехода (5000 мс = 5 сек)
+      // Переменные для отслеживания нажатий кнопки энкодера
+      unsigned long buttonPressTimer = 0; // Таймер для отсчета 5 секунд
+      bool isButtonPressedFlag = false;  // Флаг, что кнопка физически нажата
+      const long holdTime = 5000;         // Время удержания для перехода (5000 мс = 5 сек)
 
-// Переменные для отслеживания бездействия пользователя
-unsigned long inactivityTimer = 0; // Таймер для отслеживания последнего действия
-const long inactivityTime = 10000; // Время бездействия в мс (10000 мс = 10 сек)
+      // Переменные для отслеживания бездействия пользователя
+      unsigned long inactivityTimer = 0; // Таймер для отслеживания последнего действия
+      const long inactivityTime = 10000; // Время бездействия в мс (10000 мс = 10 сек)
 
-// Переменные для логики работы с меню
-bool isSelecting = false; // Флаг: находимся ли мы в режиме выбора пункта меню
+      // Переменные для логики работы с меню
+      bool isSelecting = false; // Флаг: находимся ли мы в режиме выбора пункта меню
 
-// Используем BYTE для экономии памяти, как ты и предложил.
-byte selectedMenuItem = MENU_ITEM_SET_TIME; // Текущий выбранный пункт в SET_PAGE
-byte selectedTimerItem = MENU_ITEM_TIMER_1; // Текущий выбранный пункт в SET_TIMER
+      // Используем BYTE для экономии памяти, как ты и предложил.
+      byte selectedMenuItem = MENU_ITEM_SET_TIME; // Текущий выбранный пункт в SET_PAGE
+      byte selectedTimerItem = MENU_ITEM_TIMER_1; // Текущий выбранный пункт в SET_TIMER
 
-       
+      
 //Блок 2 установки
 void setup() {
       // --- 1. ИНИЦИАЛИЗАЦИЯ ВСЕХ КОМПОНЕНТОВ ---
+      Serial.begin(9600); // запуск порта для отладки
       // Инициализируем дисплей
       tft->begin();
-      tft->setRotation(1);
+      tft->setRotation(3);
 
       // Инициализируем шину I2C для датчиков
       Wire.begin();
@@ -144,9 +145,10 @@ void setup() {
 
       // Инициализируем пины
       pinMode(RELAY_PIN, OUTPUT);
-      digitalWrite(RELAY_PIN, LOW); // Реле выключено по умолчанию
-      pinMode(ENCODER_BUTTON_PIN, INPUT_PULLUP);
-
+      digitalWrite(RELAY_PIN, HIGH); // Реле выключено по умолчанию
+      // --- НАСТРОЙКА ЭНКОДЕРА ---
+      enc1.setType(TYPE2); // Настраиваем тип энкодера (самый распространенный)
+    
       // --- 2. ЧТЕНИЕ ДАННЫХ ИЗ EEPROM ---
       // Читаем сохраненный режим работы (по адресу 0)
       char savedMode = EEPROM.read(0);
@@ -239,95 +241,112 @@ void setup() {
       tft->fillScreen(COLOR_BACKGROUND);
 }
 
-void loop() {
-  // --- 1. ЧТЕНИЕ СОСТОЯНИЯ КНОПКИ И ЭНКОДЕРА ---
-  // Читаем кнопку и энкодер на КАЖДОМ ШАГЕ loop()
-  int buttonState = digitalRead(ENCODER_BUTTON_PIN);
-  long newPos = myEnc.read();
-  
-  // Сброс таймера бездействия при вращении энкодера
-  if (newPos != 0) {
-      myEnc.write(0);
-      inactivityTimer = millis();
-  }
 
-  // --- 2. ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
-  // Возвращаемся на главный экран, если находимся в меню
-  if (currentPage == "SET_PAGE" || currentPage == "SET_TIMER") {
-      if (millis() - inactivityTimer > inactivityTime) {
-          currentPage = "MAIN_PAGE";
+//-------Логика работы перехода по страницам--------
+
+void loop() {
+      // --- ОБЯЗАТЕЛЬНЫЙ ОПРОС ЭНКОДЕРА ---
+      enc1.tick();
+
+      // --- 2. ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ (MAIN_PAGE) ---
+      // Эта логика работает ТОЛЬКО когда мы на главной странице.
+      if (currentPage == "MAIN_PAGE") {
+      
+      // --- ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (> 5 сек) ---
+      // Эта проверка ищет именно УДЕРЖАНИЕ, а не клик.
+      if (enc1.isHolded()) {
+          // Очистка экрана перед отрисовкой новой страницы
+          tft->fillScreen(COLOR_BACKGROUND);
+          
+          currentPage = "SET_PAGE";
           isStaticDrawn = false;
           isSetPageDrawn = false;
-          isSetTimerDrawn = false;
-          tft->fillScreen(COLOR_BACKGROUND);
-          // return здесь не нужен, чтобы код ниже успел выполниться
+          inactivityTimer = millis(); // Сброс таймера
+          return; // Выходим, чтобы на следующем шаге начать отрисовку SET_PAGE
       }
-  }
-
-  // --- 3. ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (> 5 сек) ---
-  if (buttonState == LOW) { // Кнопка НАЖАТА
-      if (!isButtonPressedFlag) {
-          isButtonPressedFlag = true;
-          buttonPressTimer = millis();
-      }
-      if (millis() - buttonPressTimer >= holdTime) {
-          if (currentPage == "MAIN_PAGE") {
-              currentPage = "SET_PAGE";
-              isStaticDrawn = false;
-              isSetPageDrawn = false;
-              // return здесь не нужен
-          }
-          else if (currentPage == "SET_PAGE") {
-              currentPage = "MAIN_PAGE";
-              isStaticDrawn = false;
-              isSetPageDrawn = false;
-              // return здесь не нужен
-          }
-      }
-  }
-  else { // Кнопка ОТПУЩЕНА
-      isButtonPressedFlag = false;
-  }
-
-
-  // --- 4. ВЫПОЛНЕНИЕ ЛОГИКИ ТЕКУЩЕЙ СТРАНИЦЫ ---
-
-  if (currentPage == "MAIN_PAGE") {
-      // --- ОТРИСОВКА ГЛАВНОЙ СТРАНИЦЫ ---
+      
+      // --- ОТРИСОВКА MAIN_PAGE ---
+      // Если мы здесь, значит, удержания не было. Просто рисуем главную страницу.
+      
       if (!isStaticDrawn) { 
           drawBackground();
           isStaticDrawn = true; 
       }
+      
       drawDinamointerface(); 
-      delay(50);
+
+      // Задержка 
+      static unsigned long lastMainLoopTime = 0;
+      if (millis() - lastMainLoopTime < 50) return;
+      lastMainLoopTime = millis();
   }
   
-  else if (currentPage == "SET_PAGE") {
-      // --- ОТРИСОВКА СТРАНИЦЫ НАСТРОЕК ---
+      // --- 3. ЛОГИКА СТРАНИЦЫ НАСТРОЕК (SET_PAGE) ---
+      // Эта логика работает ТОЛЬКО когда мы на странице настроек.
+      else if (currentPage == "SET_PAGE") {
+      
+      // --- ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
+      // Сбрасываем таймер при ЛЮБОМ действии с кнопкой (клик или удержание)
+      // Это не вызывает переход, а только сбрасывает таймер.
+      if (enc1.isClick() || enc1.isHolded()) {
+          inactivityTimer = millis(); 
+      }
+
+      // Проверяем, не истекло ли время бездействия
+      if (millis() - inactivityTimer > inactivityTime) {
+          tft->fillScreen(COLOR_BACKGROUND);
+          
+          currentPage = "MAIN_PAGE";
+          isStaticDrawn = false;
+          isSetPageDrawn = false;
+          return;
+      }
+      
+      // --- ОТРИСОВКА SET_PAGE ---
+      
       if (!isSetPageDrawn) {
           drawSetpage();
           isSetPageDrawn = true; 
           inactivityTimer = millis(); 
       }
-
-      // --- НОВАЯ ЛОГИКА: ПЕРЕМЕЩЕНИЕ КУРСОРА ---
-      newPos = myEnc.read(); // Читаем энкодер снова для этой страницы
-      if (newPos != 0) {
-          myEnc.write(0);
-          inactivityTimer = millis(); // Сброс таймера
-
-          selectedMenuItem += (newPos > 0) ? 1 : -1; // Двигаем курсор
-
-          // Цикличность меню (от 1 до 6)
-          if (selectedMenuItem > MENU_ITEM_EXIT) selectedMenuItem = MENU_ITEM_SET_TIME;
-          if (selectedMenuItem < MENU_ITEM_SET_TIME) selectedMenuItem = MENU_ITEM_EXIT;
-          
-          drawSetpage(); // Перерисовываем страницу для смены цвета
+      // --- ЛОГИКА ПЕРЕМЕЩЕНИЯ КУРСОРА ---
+      
+      // Проверяем, был ли поворот ВПРАВО
+      if (enc1.isRight()) {
+          // 1. Сбрасываем таймер бездействия при любом действии
+          inactivityTimer = millis(); 
+           // 2. Двигаем курсор (увеличиваем номер выбранного пункта)
+          selectedMenuItem++;
+          // 3. Реализуем ЦИКЛИЧНОСТЬ: если вышли за последний пункт, возвращаемся на первый
+          if (selectedMenuItem > MENU_ITEM_EXIT) {
+              selectedMenuItem = MENU_ITEM_SET_TIME;
+          }
+          // Перерисовываем страницу, чтобы обновить выделение
+          drawSetpage(); 
       }
       
-      delay(50);
+      // Проверяем, был ли поворот ВЛЕВО
+      if (enc1.isLeft()) {
+          // 1. Сбрасываем таймер бездействия
+          inactivityTimer = millis(); 
+          // 2. Двигаем курсор (уменьшаем номер выбранного пункта)
+          selectedMenuItem--;
+          // 3. Реализуем ЦИКЛИЧНОСТЬ: если ушли перед первый пункт, переходим на последний
+          if (selectedMenuItem < MENU_ITEM_SET_TIME) {
+              selectedMenuItem = MENU_ITEM_EXIT;
+          }
+          // 4. Перерисовываем страницу
+          drawSetpage(); 
+      }
+
+      //   задержка по времени
+      static unsigned long lastSetLoopTime = 0;
+      if (millis() - lastSetLoopTime < 50) return;
+      lastSetLoopTime = millis();
   }
 }
+
+
 
 // Загружаем главную страницу с отрисовкой надписей и шкал приборов
 void drawBackground() {
@@ -428,8 +447,8 @@ void drawBackground() {
      tft->setCursor(233, 173);// координаты установки х=230, у=173
      tft->print("C");
      }
-   
-  void drawDinamointerface() {
+// Рисуем динамические части интерфейса, стрелки digital indicator,clock, меню выбора работы   
+void drawDinamointerface() {
 
       // временно размещаем индикацию часов для определения координат!!!! 
       tft->setCursor(15, 50); 
@@ -486,80 +505,84 @@ void drawBackground() {
       tft->setTextColor(COLOR_WHITE);
       tft->setCursor(240, 210); 
       tft->print("OFF");
-      
   } 
 
-
-
-  // Рисуем страницу настроек
- void drawSetpage() {
-  tft->fillScreen(COLOR_BACKGROUND);
-  tft->setTextSize(2);
+// Рисуем страницу настроек
+void drawSetpage() {
+      tft->fillScreen(COLOR_BACKGROUND);
+      tft->setTextSize(2);
   
-  // --- ЗАГОЛОВОК СТРАНИЦЫ ---
-  tft->setCursor(120, 10); 
-  tft->print("SETTING");
+      // --- ЗАГОЛОВОК СТРАНИЦЫ ---
+      tft->setCursor(120, 10);
+      tft->setTextColor(COLOR_WHITE); 
+      tft->print("SETTING");
 
-  tft->setTextSize(1);
+      tft->setTextSize(1);
   
-  // --- ПУНКТ 1: Set Time ---
-  // Проверяем, выбран ли этот пункт (курсор на нем)
-  if (selectedMenuItem == MENU_ITEM_SET_TIME) {
+      // --- ПУНКТ 1: Set Time ---
+      // Проверяем, выбран ли этот пункт (курсор на нем)
+      if (selectedMenuItem == MENU_ITEM_SET_TIME) {
       tft->setTextColor(COLOR_YELLOW); // Цвет для выбранного пункта
-  } else {
+  } 
+      else {
       tft->setTextColor(COLOR_WHITE); // Цвет для невыбранных пунктов
   }
-  tft->setCursor(20, 40); 
-  tft->print("Set Time: ......... ");
+      tft->setCursor(20, 40); 
+      tft->print("Set Time: ......... ");
   
-  // --- ПУНКТ 2: Set Temperature ---
-  if (selectedMenuItem == MENU_ITEM_SET_TEMP) {
+      // --- ПУНКТ 2: Set Temperature ---
+      if (selectedMenuItem == MENU_ITEM_SET_TEMP) {
       tft->setTextColor(COLOR_YELLOW);
-  } else {
+  } 
+      else {
       tft->setTextColor(COLOR_WHITE);
   }
-  tft->setCursor(20, 55);
-  tft->print("Set Temperature: .. ");
+      tft->setCursor(20, 55);
+      tft->print("Set Temperature: .. ");
 
-  // --- ПУНКТ 3: Set Hysteresis ---
-  if (selectedMenuItem == MENU_ITEM_SET_HYST) {
+      // --- ПУНКТ 3: Set Hysteresis ---
+      if (selectedMenuItem == MENU_ITEM_SET_HYST) {
       tft->setTextColor(COLOR_YELLOW);
-  } else {
+  } 
+      else {
       tft->setTextColor(COLOR_WHITE);
   }
-  tft->setCursor(20, 70);
-  tft->print("Set Hysteresis: ... ");
+      tft->setCursor(20, 70);
+      tft->print("Set Hysteresis: ... ");
 
-  // --- ПУНКТ 4: Set Frosting ---
-  if (selectedMenuItem == MENU_ITEM_SET_FROST) {
+      // --- ПУНКТ 4: Set Frosting ---
+      if (selectedMenuItem == MENU_ITEM_SET_FROST) {
       tft->setTextColor(COLOR_YELLOW);
-  } else {
+  } 
+      else {
       tft->setTextColor(COLOR_WHITE);
   }
-  tft->setCursor(20, 85);
-  tft->print("Set Frosting: ..... ");
+      tft->setCursor(20, 85);
+      tft->print("Set Frosting: ..... ");
 
-  // --- ПУНКТ 5: Set Timer ---
-  if (selectedMenuItem == MENU_ITEM_SET_TIMER) {
+      // --- ПУНКТ 5: Set Timer ---
+      if (selectedMenuItem == MENU_ITEM_SET_TIMER) {
       tft->setTextColor(COLOR_YELLOW);
-  } else {
+  } 
+      else {
       tft->setTextColor(COLOR_WHITE);
   }
-  tft->setCursor(20, 100);
-  tft->print("Set Timer:");
+      tft->setCursor(20, 100);
+      tft->print("Set Timer:");
 
-  // --- ПУНКТ 6: EXIT ---
-  if (selectedMenuItem == MENU_ITEM_EXIT) {
+      // --- ПУНКТ 6: EXIT ---
+      if (selectedMenuItem == MENU_ITEM_EXIT) {
       tft->setTextColor(COLOR_YELLOW);
-  } else {
+  } 
+      else {
       tft->setTextColor(COLOR_WHITE);
   }
-  tft->setCursor(20, 115);
-  tft->print("EXIT");
+      tft->setCursor(20, 115);
+      tft->print("EXIT");
 }
 
-
-  void drawTimerpage() {
+//Рисуем страницу для установки таймеров
+void drawTimerpage() {
      tft->fillScreen(COLOR_BACKGROUND);
      tft->setTextColor(COLOR_WHITE); 
      tft->setTextSize(2);
@@ -585,7 +608,7 @@ void drawBackground() {
      tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
      tft->print("00"); // установка минут для включения после подтверждения заносим в EPROM 
 
-    // Отключение по таймеру
+     // Отключение по таймеру
      tft->setCursor(15, 85);
      tft->print("Timer OFF: ... ");
      tft->setTextColor(COLOR_WHITE); //при установке часов  меняем цвет на жёлтый
@@ -615,7 +638,7 @@ void drawBackground() {
      tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
      tft->print("00"); // установка минут для включения после подтверждения заносим в EPROM 
 
-    // Отключение по таймеру
+     // Отключение по таймеру
      tft->setCursor(15, 160);
      tft->print("Timer OFF: ... ");
      tft->setTextColor(COLOR_WHITE); //при установке часов  меняем цвет на жёлтый
@@ -647,7 +670,7 @@ void drawBackground() {
      tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
      tft->print("00"); // установка минут для включения после подтверждения заносим в EPROM 
 
-    // Отключение по таймеру
+     // Отключение по таймеру
      tft->setCursor(175, 85);
      tft->print("Timer OFF: ... ");
      tft->setTextColor(COLOR_WHITE); //при установке часов  меняем цвет на жёлтый
@@ -677,7 +700,7 @@ void drawBackground() {
      tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
      tft->print("00"); // установка минут для включения после подтверждения заносим в EPROM 
 
-      // Отключение по таймеру
+     // Отключение по таймеру
      tft->setCursor(175, 160);
      tft->print("Timer OFF: ... ");
      tft->setTextColor(COLOR_WHITE); //при установке часов  меняем цвет на жёлтый
@@ -695,10 +718,4 @@ void drawBackground() {
      // Устанавливаем надпись выход на "drawBackground" на главнуй страницу
      tft->setCursor(148, 200);
      tft->print("EXIT");
-     
-  
-  }
-  
-
-
-   
+  }  
