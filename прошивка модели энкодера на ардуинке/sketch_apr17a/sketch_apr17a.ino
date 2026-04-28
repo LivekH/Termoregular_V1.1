@@ -241,6 +241,8 @@ void setup() {
       tft->fillScreen(COLOR_BACKGROUND);
 }
 
+
+// ------Основная логика выполнения------
 void loop() {
   // --- 1. ОБЯЗАТЕЛЬНЫЙ ОПРОС ЭНКОДЕРА ---
   enc1.tick(); 
