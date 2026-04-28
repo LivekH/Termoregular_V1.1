@@ -131,6 +131,7 @@ byte selectedTimerItem = MENU_ITEM_TIMER_1; // Текущий выбранный
 //Блок 2 установки
 void setup() {
       // --- 1. ИНИЦИАЛИЗАЦИЯ ВСЕХ КОМПОНЕНТОВ ---
+      Serial.begin(9600); // запуск порта для отладки
       // Инициализируем дисплей
       tft->begin();
       tft->setRotation(3);
@@ -317,7 +318,8 @@ void loop() {
           inactivityTimer = millis(); // Сброс таймера
 
           selectedMenuItem += (newPos > 0) ? 1 : -1; // Двигаем курсор
-
+          Serial.println("Encoder moved!");
+          Serial.println(newPos); // Выводим значение
           // Цикличность меню (от 1 до 6)
           if (selectedMenuItem > MENU_ITEM_EXIT) selectedMenuItem = MENU_ITEM_SET_TIME;
           if (selectedMenuItem < MENU_ITEM_SET_TIME) selectedMenuItem = MENU_ITEM_EXIT;
