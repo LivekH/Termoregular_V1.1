@@ -8,7 +8,7 @@
 #include <Wire.h>               // Библиотека для работы с шиной I2C (нужна для SHT31 и DS3231)
 #include <Adafruit_SHT31.h>     // Библиотека для датчика температуры и влажности SHT31
 #include <RTClib.h>             // Библиотека для часов реального времени DS3231
-#include <GyverEncoder.h>       // Библиотека для работы с энкодером
+#include <GyverEncoder.h>           // Библиотека для работы с энкодером
 
 // --- 2. ОПРЕДЕЛЯЕМ (ASSIGN) ВСЕ ПИНЫ ---
 // --- ПИНЫ ДЛЯ УПРАВЛЕНИЯ НАГРЕВОМ/ОХЛАЖДЕНИЕМ ---
@@ -243,12 +243,14 @@ void setup() {
 
 void loop() {
   // --- 1. ОБЩИЙ ОПРОС ЭНКОДЕРА ---
-  enc1.tick(); // Обязательный опрос энкодера
+  // Эта строка ОБЯЗАТЕЛЬНА для работы библиотеки GyverEncoder.
+  enc1.tick();
 
-  // --- 2. ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (СТАРАЯ ЛОГИКА С ТАЙМЕРОМ) ---
-  // Эта проверка должна быть ВНЕ блока проверки текущей страницы.
+  // --- 2. ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (> 5 сек) ---
+  // Эта проверка должна быть в самом начале, ДО проверки текущей страницы.
+  // Так мы меняем страницу ДО того, как логика страницы решит нас вернуть.
   
-  // Если кнопка НАЖАТА (используем функцию из GyverEncoder)
+  // Если кнопка НАЖАТА
   if (enc1.isPress()) {
       // Если это НОВОЕ нажатие, запускаем таймер
       static unsigned long holdTimer = 0;
@@ -259,7 +261,7 @@ void loop() {
           holdTimer = millis(); // Запускаем таймер
       }
       
-      // Проверяем, прошло ли 5 секунд с момента НАЧАЛА нажатия
+      // Проверяем, прошло ли 5 секунд
       if (millis() - holdTimer >= 5000) { 
           
           // --- ЛОГИКА ПЕРЕХОДА ---
@@ -267,59 +269,53 @@ void loop() {
               currentPage = "SET_PAGE";
               isStaticDrawn = false;
               isSetPageDrawn = false;
+              inactivityTimer = millis(); // Сбрасываем таймер бездействия
               return; // Выходим, чтобы на следующем шаге отрисовать SET_PAGE
           }
           else if (currentPage == "SET_PAGE") {
               currentPage = "MAIN_PAGE";
               isStaticDrawn = false;
               isSetPageDrawn = false;
+              inactivityTimer = millis();
               return; // Выходим, чтобы на следующем шаге отрисовать MAIN_PAGE
           }
       }
   }
   else { // Кнопка ОТПУЩЕНА
-      // Сбрасываем флаг удержания, чтобы можно было нажать снова
       static bool isButtonPressedFlag = false;
       isButtonPressedFlag = false;
   }
 
 
-  // --- 3. ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
-  if (currentPage != "MAIN_PAGE") {
-      // Сброс таймера происходит при вращении энкодера (в коде ниже)
-      if (millis() - inactivityTimer > inactivityTime) {
-          currentPage = "MAIN_PAGE";
-          isStaticDrawn = false;
-          isSetPageDrawn = false;
-          tft->fillScreen(COLOR_BACKGROUND);
-      }
-  }
-
-
-  // --- 4. ВЫПОЛНЕНИЕ ЛОГИКИ ТЕКУЩЕЙ СТРАНИЦЫ ---
+  // --- 3. ВЫПОЛНЕНИЕ ЛОГИКИ ТЕКУЩЕЙ СТРАНИЦЫ ---
 
   if (currentPage == "MAIN_PAGE") {
+      // --- ОТРИСОВКА ГЛАВНОЙ СТРАНИЦЫ ---
+      
       if (!isStaticDrawn) { 
           drawBackground();
           isStaticDrawn = true; 
       }
+      
       drawDinamointerface(); 
       
       delay(50);
   }
   
   else if (currentPage == "SET_PAGE") {
+      // --- ОТРИСОВКА И ЛОГИКА СТРАНИЦЫ НАСТРОЕК ---
+      
       if (!isSetPageDrawn) {
           drawSetpage();
           isSetPageDrawn = true; 
-          inactivityTimer = millis(); 
+          inactivityTimer = millis(); // Сброс таймера при входе в меню
       }
-
+      
       // --- ЛОГИКА ПЕРЕМЕЩЕНИЯ КУРСОРА ---
       
       // Проверка вращения ВПРАВО
       if (enc1.isRight()) {
-          inactivityTimer = millis(); 
+          inactivityTimer = millis(); // Сбрасываем таймер бездействия
           
           selectedMenuItem++; 
           if (selectedMenuItem > MENU_ITEM_EXIT) selectedMenuItem = MENU_ITEM_SET_TIME;
