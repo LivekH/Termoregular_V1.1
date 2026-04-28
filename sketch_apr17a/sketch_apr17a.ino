@@ -245,117 +245,95 @@ void setup() {
 //-------Логика работы перехода по страницам--------
 
 void loop() {
-  // --- 1. ОБЯЗАТЕЛЬНЫЙ ОПРОС ЭНКОДЕРА ---
-  // Эта строка должна быть в самом начале loop.
-  enc1.tick(); 
+  // --- 1. ОПРОС ЭНКОДЕРА (ОБЯЗАТЕЛЬНО) ---
+  enc1.tick();
 
-  // --- 2. ПРОВЕРКА УСЛОВИЙ ПЕРЕХОДА (В САМОМ НАЧАЛЕ!) ---
-  // Все проверки, которые меняют currentPage, должны быть здесь,
-  // ДО того, как начнется отрисовка текущей страницы.
-
-  // --- А) ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
-  if (currentPage == "SET_PAGE") {
-      // Сбрасываем таймер при вращении энкодера
-      if (enc1.isRight() || enc1.isLeft()) {
-          inactivityTimer = millis();
-      }
-
-      if (millis() - inactivityTimer > inactivityTime) {
-          currentPage = "MAIN_PAGE";
-          isStaticDrawn = false;
-          isSetPageDrawn = false;
-          tft->fillScreen(COLOR_BACKGROUND);
-          return; // Выходим, чтобы на следующем шаге отрисовать MAIN_PAGE
-      }
-  }
-
-  // --- Б) ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (> 5 сек) ---
-  if (enc1.isHolded()) {
-      tft->fillScreen(COLOR_BACKGROUND); // Очищаем экран перед новой страницей
-
-      if (currentPage == "MAIN_PAGE") {
-          currentPage = "SET_PAGE";
-          isStaticDrawn = false;
-          isSetPageDrawn = false;
-          return; // Выходим, чтобы на следующем шаге отрисовать SET_PAGE
-      }
-      else if (currentPage == "SET_PAGE") {
-          currentPage = "MAIN_PAGE";
-          isStaticDrawn = false;
-          isSetPageDrawn = false;
-          return; // Выходим, чтобы на следующем шаге отрисовать MAIN_PAGE
-      }
-  }
-
-
-  // --- 3. ВЫПОЛНЕНИЕ ЛОГИКИ ТЕКУЩЕЙ СТРАНИЦЫ ---
-  // Этот код выполнится, только если не было 'return' в блоках выше.
-
+  // --- 2. ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ (MAIN_PAGE) ---
   if (currentPage == "MAIN_PAGE") {
-      // --- ОТРИСОВКА ГЛАВНОЙ СТРАНИЦЫ ---
       
-      // Отрисовка фона (шкалы, подписи) - только один раз
+      // --- А) ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (> 5 сек) ---
+      if (enc1.isPress()) {
+          static unsigned long buttonPressTimer = 0;
+          static bool isButtonPressedFlag = false;
+          
+          // Запускаем таймер при первом нажатии
+          if (!isButtonPressedFlag) {
+              isButtonPressedFlag = true;
+              buttonPressTimer = millis();
+          }
+          
+          // Проверяем, прошло ли 5 секунд
+          if (millis() - buttonPressTimer >= 5000) {
+              // --- ПЕРЕХОД НА SET_PAGE ---
+              tft->fillScreen(COLOR_BACKGROUND);
+              
+              currentPage = "SET_PAGE";
+              isStaticDrawn = false;
+              isSetPageDrawn = false;
+              inactivityTimer = millis(); // Сброс таймера при входе
+              return; 
+          }
+      }
+      else {
+          // Сбрасываем флаг удержания, когда кнопка отпущена
+          static bool isButtonPressedFlag = false;
+          isButtonPressedFlag = false;
+      }
+      
+      // --- Б) ОТРИСОВКА MAIN_PAGE (ЕСЛИ КНОПКА НЕ НАЖАТА) ---
+      
       if (!isStaticDrawn) { 
           drawBackground();
           isStaticDrawn = true; 
       }
       
-      // Отрисовка динамических элементов (стрелки, цифры)
       drawDinamointerface(); 
 
-      // Заменяем delay() на неблокирующую задержку для плавной работы
-      static unsigned long lastMainTime = millis();
-      if (millis() - lastMainTime < 50) return;
-      lastMainTime = millis();
+      // --- В) ЗАМЕНА delay(50) ---
+      static unsigned long lastMainLoopTime = 0;
+      if (millis() - lastMainLoopTime < 50) return;
+      lastMainLoopTime = millis();
   }
   
+  // --- 3. ЛОГИКА СТРАНИЦЫ НАСТРОЕК (SET_PAGE) ---
   else if (currentPage == "SET_PAGE") {
-      // --- ОТРИСОВКА И ЛОГИКА СТРАНИЦЫ НАСТРОЕК ---
       
-      // Отрисовка страницы настроек - только один раз при входе
+      // --- А) ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
+      // (Здесь пока нет вращения энкодера, сбрасываем таймер только при клике)
+      
+      // --- Б) ПРОВЕРКА КНОПКИ ДЛЯ СБРОСА ТАЙМЕРА ---
+      // Это та часть, которую я упустил. При нажатии кнопки - сброс таймера.
+      if (enc1.isClick() || enc1.isPress() || enc1.isHolded()) {
+          // Любое действие с кнопкой сбрасывает таймер
+          inactivityTimer = millis(); 
+      }
+
+      // Теперь проверяем сам таймер
+      if (millis() - inactivityTimer > inactivityTime) {
+          // --- ВОЗВРАТ НА MAIN_PAGE ---
+          tft->fillScreen(COLOR_BACKGROUND);
+          
+          currentPage = "MAIN_PAGE";
+          isStaticDrawn = false;
+          isSetPageDrawn = false;
+          return;
+      }
+      
+      // --- В) ОТРИСОВКА SET_PAGE (ПОКА НИЧЕГО НЕ ДЕЛАЕМ, ТОЛЬКО ЖДЕМ) ---
+      
       if (!isSetPageDrawn) {
           drawSetpage();
           isSetPageDrawn = true; 
-          inactivityTimer = millis(); 
-      }
-      
-      // --- ЛОГИКА ПЕРЕМЕЩЕНИЯ КУРСОРА ---
-      
-      if (enc1.isRight()) {
-          inactivityTimer = millis(); 
-          
-          selectedMenuItem++; 
-          if (selectedMenuItem > MENU_ITEM_EXIT) selectedMenuItem = MENU_ITEM_SET_TIME;
-          
-          drawSetpage(); 
-      }
-      
-      if (enc1.isLeft()) {
-          inactivityTimer = millis(); 
-          
-          selectedMenuItem--; 
-          if (selectedMenuItem < MENU_ITEM_SET_TIME) selectedMenuItem = MENU_ITEM_EXIT;
-          
-          drawSetpage(); 
+          inactivityTimer = millis(); // Инициализация таймера при входе
       }
 
-      // ЛОГИКА КЛИКА ПО КНОПКЕ
-      if (enc1.isClick()) {
-          if (selectedMenuItem == MENU_ITEM_EXIT) {
-              currentPage = "MAIN_PAGE";
-              isStaticDrawn = false;
-              isSetPageDrawn = false;
-              tft->fillScreen(COLOR_BACKGROUND);
-              return;
-          }
-      }
-      
-      // Заменяем delay() на неблокирующую задержку
-      static unsigned long lastSetTime = millis();
-      if (millis() - lastSetTime < 50) return;
-      lastSetTime = millis();
+      // --- Г) ЗАМЕНА delay(50) ---
+      static unsigned long lastSetLoopTime = 0;
+      if (millis() - lastSetLoopTime < 50) return;
+      lastSetLoopTime = millis();
   }
 }
+
 
 
 // Загружаем главную страницу с отрисовкой надписей и шкал приборов
