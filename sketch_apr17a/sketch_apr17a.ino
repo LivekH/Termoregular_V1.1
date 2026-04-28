@@ -245,30 +245,15 @@ void setup() {
 //-------Логика работы перехода по страницам--------
 
 void loop() {
-  // 1. ОПРОС ЭНКОДЕРА (ОБЯЗАТЕЛЬНО)
-  enc1.tick();
+  // --- 1. ОБЯЗАТЕЛЬНЫЙ ОПРОС ЭНКОДЕРА ---
+  // Эта строка должна быть в самом начале loop.
+  enc1.tick(); 
 
-  // 2. ПРОВЕРКА ПЕРЕХОДА ПО УДЕРЖАНИЮ КНОПКИ
-  // Эта проверка стоит в начале, чтобы переход сработал сразу.
-  if (enc1.isHolded()) {
-      // ОЧИЩАЕМ ЭКРАН ТОЛЬКО ПРИ СМЕНЕ СТРАНИЦЫ
-      tft->fillScreen(COLOR_BACKGROUND);
+  // --- 2. ПРОВЕРКА УСЛОВИЙ ПЕРЕХОДА (В САМОМ НАЧАЛЕ!) ---
+  // Все проверки, которые меняют currentPage, должны быть здесь,
+  // ДО того, как начнется отрисовка текущей страницы.
 
-      if (currentPage == "MAIN_PAGE") {
-          currentPage = "SET_PAGE";
-          isStaticDrawn = false; // Сбрасываем флаги для новой страницы
-          isSetPageDrawn = false;
-          return; // Выходим для отрисовки SET_PAGE
-      }
-      else if (currentPage == "SET_PAGE") {
-          currentPage = "MAIN_PAGE";
-          isStaticDrawn = false;
-          isSetPageDrawn = false;
-          return; // Выходим для отрисовки MAIN_PAGE
-      }
-  }
-
-  // 3. ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек)
+  // --- А) ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
   if (currentPage == "SET_PAGE") {
       // Сбрасываем таймер при вращении энкодера
       if (enc1.isRight() || enc1.isLeft()) {
@@ -276,20 +261,38 @@ void loop() {
       }
 
       if (millis() - inactivityTimer > inactivityTime) {
-          // ОЧИЩАЕМ ЭКРАН ТОЛЬКО ПРИ ВОЗВРАТЕ
-          tft->fillScreen(COLOR_BACKGROUND);
-          
           currentPage = "MAIN_PAGE";
           isStaticDrawn = false;
           isSetPageDrawn = false;
-          return;
+          tft->fillScreen(COLOR_BACKGROUND);
+          return; // Выходим, чтобы на следующем шаге отрисовать MAIN_PAGE
       }
   }
 
-  // 4. ЛОГИКА ТЕКУЩЕЙ СТРАНИЦЫ (ЗДЕСЬ ОЧИСТКИ ЭКРАНА НЕТ!)
+  // --- Б) ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (> 5 сек) ---
+  if (enc1.isHolded()) {
+      tft->fillScreen(COLOR_BACKGROUND); // Очищаем экран перед новой страницей
+
+      if (currentPage == "MAIN_PAGE") {
+          currentPage = "SET_PAGE";
+          isStaticDrawn = false;
+          isSetPageDrawn = false;
+          return; // Выходим, чтобы на следующем шаге отрисовать SET_PAGE
+      }
+      else if (currentPage == "SET_PAGE") {
+          currentPage = "MAIN_PAGE";
+          isStaticDrawn = false;
+          isSetPageDrawn = false;
+          return; // Выходим, чтобы на следующем шаге отрисовать MAIN_PAGE
+      }
+  }
+
+
+  // --- 3. ВЫПОЛНЕНИЕ ЛОГИКИ ТЕКУЩЕЙ СТРАНИЦЫ ---
+  // Этот код выполнится, только если не было 'return' в блоках выше.
 
   if (currentPage == "MAIN_PAGE") {
-      // --- ГЛАВНАЯ СТРАНИЦА ---
+      // --- ОТРИСОВКА ГЛАВНОЙ СТРАНИЦЫ ---
       
       // Отрисовка фона (шкалы, подписи) - только один раз
       if (!isStaticDrawn) { 
@@ -300,14 +303,14 @@ void loop() {
       // Отрисовка динамических элементов (стрелки, цифры)
       drawDinamointerface(); 
 
-      // ЗАМЕНА DELAY - код выполняется быстро, энкодер не пропускает шаги
-      static unsigned long lastTime = millis();
-      if (millis() - lastTime < 50) return;
-      lastTime = millis();
+      // Заменяем delay() на неблокирующую задержку для плавной работы
+      static unsigned long lastMainTime = millis();
+      if (millis() - lastMainTime < 50) return;
+      lastMainTime = millis();
   }
   
   else if (currentPage == "SET_PAGE") {
-      // --- СТРАНИЦА НАСТРОЕК ---
+      // --- ОТРИСОВКА И ЛОГИКА СТРАНИЦЫ НАСТРОЕК ---
       
       // Отрисовка страницы настроек - только один раз при входе
       if (!isSetPageDrawn) {
@@ -316,19 +319,23 @@ void loop() {
           inactivityTimer = millis(); 
       }
       
-      // ЛОГИКА ПЕРЕМЕЩЕНИЯ КУРСОРА
+      // --- ЛОГИКА ПЕРЕМЕЩЕНИЯ КУРСОРА ---
       
       if (enc1.isRight()) {
           inactivityTimer = millis(); 
+          
           selectedMenuItem++; 
           if (selectedMenuItem > MENU_ITEM_EXIT) selectedMenuItem = MENU_ITEM_SET_TIME;
+          
           drawSetpage(); 
       }
       
       if (enc1.isLeft()) {
           inactivityTimer = millis(); 
+          
           selectedMenuItem--; 
           if (selectedMenuItem < MENU_ITEM_SET_TIME) selectedMenuItem = MENU_ITEM_EXIT;
+          
           drawSetpage(); 
       }
 
@@ -338,16 +345,18 @@ void loop() {
               currentPage = "MAIN_PAGE";
               isStaticDrawn = false;
               isSetPageDrawn = false;
+              tft->fillScreen(COLOR_BACKGROUND);
               return;
           }
       }
       
-      // ЗАМЕНА DELAY
-      static unsigned long lastTime = millis();
-      if (millis() - lastTime < 50) return;
-      lastTime = millis();
+      // Заменяем delay() на неблокирующую задержку
+      static unsigned long lastSetTime = millis();
+      if (millis() - lastSetTime < 50) return;
+      lastSetTime = millis();
   }
 }
+
 
 // Загружаем главную страницу с отрисовкой надписей и шкал приборов
 void drawBackground() {
