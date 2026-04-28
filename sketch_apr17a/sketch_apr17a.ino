@@ -245,42 +245,28 @@ void setup() {
 //-------Логика работы перехода по страницам--------
 
 void loop() {
-  // --- 1. ОПРОС ЭНКОДЕРА (ОБЯЗАТЕЛЬНО) ---
+  // --- 1. ОБЯЗАТЕЛЬНЫЙ ОПРОС ЭНКОДЕРА ---
   enc1.tick();
 
   // --- 2. ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ (MAIN_PAGE) ---
+  // Эта логика работает ТОЛЬКО когда мы на главной странице.
   if (currentPage == "MAIN_PAGE") {
       
       // --- А) ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (> 5 сек) ---
-      if (enc1.isPress()) {
-          static unsigned long buttonPressTimer = 0;
-          static bool isButtonPressedFlag = false;
+      // Эта проверка ищет именно УДЕРЖАНИЕ, а не клик.
+      if (enc1.isHolded()) {
+          // Очистка экрана перед отрисовкой новой страницы
+          tft->fillScreen(COLOR_BACKGROUND);
           
-          // Запускаем таймер при первом нажатии
-          if (!isButtonPressedFlag) {
-              isButtonPressedFlag = true;
-              buttonPressTimer = millis();
-          }
-          
-          // Проверяем, прошло ли 5 секунд
-          if (millis() - buttonPressTimer >= 5000) {
-              // --- ПЕРЕХОД НА SET_PAGE ---
-              tft->fillScreen(COLOR_BACKGROUND);
-              
-              currentPage = "SET_PAGE";
-              isStaticDrawn = false;
-              isSetPageDrawn = false;
-              inactivityTimer = millis(); // Сброс таймера при входе
-              return; 
-          }
-      }
-      else {
-          // Сбрасываем флаг удержания, когда кнопка отпущена
-          static bool isButtonPressedFlag = false;
-          isButtonPressedFlag = false;
+          currentPage = "SET_PAGE";
+          isStaticDrawn = false;
+          isSetPageDrawn = false;
+          inactivityTimer = millis(); // Сброс таймера
+          return; // Выходим, чтобы на следующем шаге начать отрисовку SET_PAGE
       }
       
-      // --- Б) ОТРИСОВКА MAIN_PAGE (ЕСЛИ КНОПКА НЕ НАЖАТА) ---
+      // --- Б) ОТРИСОВКА MAIN_PAGE ---
+      // Если мы здесь, значит, удержания не было. Просто рисуем главную страницу.
       
       if (!isStaticDrawn) { 
           drawBackground();
@@ -289,28 +275,25 @@ void loop() {
       
       drawDinamointerface(); 
 
-      // --- В) ЗАМЕНА delay(50) ---
+      // Заменяем delay(50) на неблокирующую задержку
       static unsigned long lastMainLoopTime = 0;
       if (millis() - lastMainLoopTime < 50) return;
       lastMainLoopTime = millis();
   }
   
   // --- 3. ЛОГИКА СТРАНИЦЫ НАСТРОЕК (SET_PAGE) ---
+  // Эта логика работает ТОЛЬКО когда мы на странице настроек.
   else if (currentPage == "SET_PAGE") {
       
       // --- А) ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
-      // (Здесь пока нет вращения энкодера, сбрасываем таймер только при клике)
-      
-      // --- Б) ПРОВЕРКА КНОПКИ ДЛЯ СБРОСА ТАЙМЕРА ---
-      // Это та часть, которую я упустил. При нажатии кнопки - сброс таймера.
-      if (enc1.isClick() || enc1.isPress() || enc1.isHolded()) {
-          // Любое действие с кнопкой сбрасывает таймер
+      // Сбрасываем таймер при ЛЮБОМ действии с кнопкой (клик или удержание)
+      // Это не вызывает переход, а только сбрасывает таймер.
+      if (enc1.isClick() || enc1.isHolded()) {
           inactivityTimer = millis(); 
       }
 
-      // Теперь проверяем сам таймер
+      // Проверяем, не истекло ли время бездействия
       if (millis() - inactivityTimer > inactivityTime) {
-          // --- ВОЗВРАТ НА MAIN_PAGE ---
           tft->fillScreen(COLOR_BACKGROUND);
           
           currentPage = "MAIN_PAGE";
@@ -319,15 +302,15 @@ void loop() {
           return;
       }
       
-      // --- В) ОТРИСОВКА SET_PAGE (ПОКА НИЧЕГО НЕ ДЕЛАЕМ, ТОЛЬКО ЖДЕМ) ---
+      // --- Б) ОТРИСОВКА SET_PAGE ---
       
       if (!isSetPageDrawn) {
           drawSetpage();
           isSetPageDrawn = true; 
-          inactivityTimer = millis(); // Инициализация таймера при входе
+          inactivityTimer = millis(); 
       }
 
-      // --- Г) ЗАМЕНА delay(50) ---
+      // Заменяем delay(50) на неблокирующую задержку
       static unsigned long lastSetLoopTime = 0;
       if (millis() - lastSetLoopTime < 50) return;
       lastSetLoopTime = millis();
