@@ -242,38 +242,48 @@ void setup() {
 }
 
 void loop() {
-  // --- 1. ОБЩИЙ ОПРОС ЭНКОДЕРА ---
+  // --- 1. ОБЩИЙ ОПРОС ЭНКОДЕРА И КНОПКИ ---
   // Эта строка ОБЯЗАТЕЛЬНА для работы библиотеки GyverEncoder.
-  // Она должна вызываться на каждом шаге loop.
   enc1.tick(); 
 
-  // --- 2. ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
-  // Если мы находимся в меню и нет активности более 10 секунд,
-  // возвращаемся на главный экран.
+  // --- 2. ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (> 5 сек) ---
+  // Эта проверка должна быть ВНЕ блока проверки текущей страницы,
+  // чтобы она работала и на MAIN_PAGE, и на SET_PAGE.
+  if (enc1.isHolded()) {
+      if (currentPage == "MAIN_PAGE") {
+          currentPage = "SET_PAGE";
+          isStaticDrawn = false;
+          isSetPageDrawn = false;
+          return; // Выходим, чтобы на следующем шаге отрисовать SET_PAGE
+      }
+      else if (currentPage == "SET_PAGE") {
+          currentPage = "MAIN_PAGE";
+          isStaticDrawn = false;
+          isSetPageDrawn = false;
+          return; // Выходим, чтобы на следующем шаге отрисовать MAIN_PAGE
+      }
+  }
+
+  // --- 3. ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
   if (currentPage != "MAIN_PAGE") {
-      // Таймер сбрасывается внутри библиотеки при вызове enc1.tick()
-      // при обнаружении движения или клика, но наша проверка остается.
+      // Таймер сбрасывается внутри библиотеки при активности,
+      // но наша проверка остается для возврата по таймауту.
       if (millis() - inactivityTimer > inactivityTime) {
           currentPage = "MAIN_PAGE";
           isStaticDrawn = false;
           isSetPageDrawn = false;
-          isSetTimerDrawn = false;
           tft->fillScreen(COLOR_BACKGROUND);
       }
   }
 
-  // --- 3. ВЫПОЛНЕНИЕ ЛОГИКИ ТЕКУЩЕЙ СТРАНИЦЫ ---
+  // --- 4. ВЫПОЛНЕНИЕ ЛОГИКИ ТЕКУЩЕЙ СТРАНИЦЫ ---
 
   if (currentPage == "MAIN_PAGE") {
       // --- ОТРИСОВКА ГЛАВНОЙ СТРАНИЦЫ ---
-      
-      // Отрисовка статического фона (только один раз)
       if (!isStaticDrawn) { 
           drawBackground();
           isStaticDrawn = true; 
       }
-      
-      // Отрисовка динамических элементов (стрелки, цифры)
       drawDinamointerface(); 
       
       delay(50);
@@ -289,7 +299,7 @@ void loop() {
           inactivityTimer = millis(); // Сброс таймера при входе в меню
       }
       
-      // --- ЛОГИКА ПЕРЕМЕЩЕНИЯ КУРСОРА (ИСПРАВЛЕННАЯ) ---
+      // --- ЛОГИКА ПЕРЕМЕЩЕНИЯ КУРСОРА ---
       
       // Проверка вращения ВПРАВО
       if (enc1.isRight()) {
@@ -297,7 +307,7 @@ void loop() {
           
           selectedMenuItem++; // Двигаем курсор вниз по списку
           if (selectedMenuItem > MENU_ITEM_EXIT) {
-              selectedMenuItem = MENU_ITEM_SET_TIME; // Цикличность: за последним идет первый
+              selectedMenuItem = MENU_ITEM_SET_TIME; // Цикличность
           }
           drawSetpage(); // Перерисовываем страницу для смены цвета выделения
       }
@@ -308,7 +318,7 @@ void loop() {
           
           selectedMenuItem--; // Двигаем курсор вверх по списку
           if (selectedMenuItem < MENU_ITEM_SET_TIME) {
-              selectedMenuItem = MENU_ITEM_EXIT; // Цикличность: перед первым идет последний
+              selectedMenuItem = MENU_ITEM_EXIT; // Цикличность
           }
           drawSetpage(); // Перерисовываем страницу для смены цвета выделения
       }
@@ -321,6 +331,7 @@ void loop() {
               isStaticDrawn = false;
               isSetPageDrawn = false;
               tft->fillScreen(COLOR_BACKGROUND);
+              return; // Выходим, чтобы на следующем шаге отрисовать MAIN_PAGE
           }
           
           // Здесь будет логика для входа в подпункты (например, Set Time)
