@@ -242,121 +242,84 @@ void setup() {
 }
 
 void loop() {
-  // --- 1. ОБЩИЙ ОПРОС ЭНКОДЕРА ---
-  // Эта строка ОБЯЗАТЕЛЬНА для работы библиотеки GyverEncoder.
-  // Она должна быть в самом начале loop.
+  // --- 1. ОБЯЗАТЕЛЬНЫЙ ОПРОС ЭНКОДЕРА ---
   enc1.tick(); 
 
-  // --- 2. ПРОВЕРКА ПЕРЕХОДА МЕЖДУ СТРАНИЦАМИ (НАЧАЛО LOOP) ---
-  // Проверка удержания кнопки (для перехода)
+  // --- 2. ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
+  if (currentPage == "SET_PAGE") {
+      if (millis() - inactivityTimer > inactivityTime) {
+          currentPage = "MAIN_PAGE";
+          isStaticDrawn = false;
+          isSetPageDrawn = false;
+          tft->fillScreen(COLOR_BACKGROUND);
+          return; 
+      }
+  }
+
+  // --- 3. ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (> 5 сек) ---
   if (enc1.isHolded()) {
       if (currentPage == "MAIN_PAGE") {
           currentPage = "SET_PAGE";
           isStaticDrawn = false;
           isSetPageDrawn = false;
-          inactivityTimer = millis(); // Сброс таймера при входе
-          return; // Выходим, чтобы на следующем шаге отрисовать SET_PAGE
+          inactivityTimer = millis(); 
+          tft->fillScreen(COLOR_BACKGROUND);
+          return; 
       }
       else if (currentPage == "SET_PAGE") {
           currentPage = "MAIN_PAGE";
           isStaticDrawn = false;
           isSetPageDrawn = false;
           inactivityTimer = millis();
-          return; // Выходим, чтобы на следующем шаге отрисовать MAIN_PAGE
+          tft->fillScreen(COLOR_BACKGROUND);
+          return;
       }
   }
-
-  // --- 3. ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
-  // Проверяем бездействие, если мы НЕ на главной странице
-  if (currentPage != "MAIN_PAGE") {
-      // Сброс таймера при любом вращении энкодера
-      if (enc1.isRight() || enc1.isLeft()) {
-          inactivityTimer = millis();
-      }
-
-      if (millis() - inactivityTimer > inactivityTime) {
-          currentPage = "MAIN_PAGE";
-          isStaticDrawn = false;
-          isSetPageDrawn = false;
-          tft->fillScreen(COLOR_BACKGROUND); // Очистка экрана перед возвратом
-          return; 
-      }
-  }
-
-
   // --- 4. ВЫПОЛНЕНИЕ ЛОГИКИ ТЕКУЩЕЙ СТРАНИЦЫ ---
 
   if (currentPage == "MAIN_PAGE") {
       // --- ОТРИСОВКА ГЛАВНОЙ СТРАНИЦЫ ---
-      
-      // Очищаем экран перед отрисовкой, чтобы не было артефактов
-      tft->fillScreen(COLOR_BACKGROUND); 
-      
+      if (!isStaticDrawn) { 
+          tft->fillScreen(COLOR_BACKGROUND); 
+      }
       if (!isStaticDrawn) { 
           drawBackground();
           isStaticDrawn = true; 
       }
-      
       drawDinamointerface(); 
-      
-      // Заменяем delay() на неблокирующую задержку для плавной работы
       static unsigned long lastMainTime = 0;
       if (millis() - lastMainTime < 50) return;
       lastMainTime = millis();
-      
   }
   
   else if (currentPage == "SET_PAGE") {
       // --- ОТРИСОВКА И ЛОГИКА СТРАНИЦЫ НАСТРОЕК ---
-      
-      // Очищаем экран перед отрисовкой страницы настроек
-      tft->fillScreen(COLOR_BACKGROUND); 
-      
+      if (!isSetPageDrawn) { 
+          tft->fillScreen(COLOR_BACKGROUND); 
+      }
       if (!isSetPageDrawn) {
           drawSetpage();
           isSetPageDrawn = true; 
           inactivityTimer = millis(); 
       }
-      
-      // --- ЛОГИКА ПЕРЕМЕЩЕНИЯ КУРСОРА ---
-      
-      // Проверка вращения ВПРАВО
       if (enc1.isRight()) {
           inactivityTimer = millis(); 
-          
           selectedMenuItem++; 
           if (selectedMenuItem > MENU_ITEM_EXIT) selectedMenuItem = MENU_ITEM_SET_TIME;
-          
           drawSetpage(); 
       }
-      
-      // Проверка вращения ВЛЕВО
       if (enc1.isLeft()) {
           inactivityTimer = millis(); 
-          
           selectedMenuItem--; 
           if (selectedMenuItem < MENU_ITEM_SET_TIME) selectedMenuItem = MENU_ITEM_EXIT;
-          
           drawSetpage(); 
       }
-
-      // --- ЛОГИКА КЛИКА ПО КНОПКЕ ---
-      if (enc1.isClick()) {
-          if (selectedMenuItem == MENU_ITEM_EXIT) {
-              currentPage = "MAIN_PAGE";
-              isStaticDrawn = false;
-              isSetPageDrawn = false;
-              tft->fillScreen(COLOR_BACKGROUND);
-              return;
-          }
-      }
-      
-      // Заменяем delay() на неблокирующую задержку для плавной работы энкодера
       static unsigned long lastSetTime = 0;
       if (millis() - lastSetTime < 50) return;
       lastSetTime = millis();
   }
 }
+
 
 // Загружаем главную страницу с отрисовкой надписей и шкал приборов
 void drawBackground() {
