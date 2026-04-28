@@ -242,32 +242,51 @@ void setup() {
 }
 
 void loop() {
-  // --- 1. ОБЩИЙ ОПРОС ЭНКОДЕРА И КНОПКИ ---
-  // Эта строка ОБЯЗАТЕЛЬНА для работы библиотеки GyverEncoder.
-  enc1.tick(); 
+  // --- 1. ОБЩИЙ ОПРОС ЭНКОДЕРА ---
+  enc1.tick(); // Обязательный опрос энкодера
 
-  // --- 2. ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (> 5 сек) ---
-  // Эта проверка должна быть ВНЕ блока проверки текущей страницы,
-  // чтобы она работала и на MAIN_PAGE, и на SET_PAGE.
-  if (enc1.isHolded()) {
-      if (currentPage == "MAIN_PAGE") {
-          currentPage = "SET_PAGE";
-          isStaticDrawn = false;
-          isSetPageDrawn = false;
-          return; // Выходим, чтобы на следующем шаге отрисовать SET_PAGE
+  // --- 2. ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (СТАРАЯ ЛОГИКА С ТАЙМЕРОМ) ---
+  // Эта проверка должна быть ВНЕ блока проверки текущей страницы.
+  
+  // Если кнопка НАЖАТА (используем функцию из GyverEncoder)
+  if (enc1.isPress()) {
+      // Если это НОВОЕ нажатие, запускаем таймер
+      static unsigned long holdTimer = 0;
+      static bool isButtonPressedFlag = false;
+
+      if (!isButtonPressedFlag) {
+          isButtonPressedFlag = true;
+          holdTimer = millis(); // Запускаем таймер
       }
-      else if (currentPage == "SET_PAGE") {
-          currentPage = "MAIN_PAGE";
-          isStaticDrawn = false;
-          isSetPageDrawn = false;
-          return; // Выходим, чтобы на следующем шаге отрисовать MAIN_PAGE
+      
+      // Проверяем, прошло ли 5 секунд с момента НАЧАЛА нажатия
+      if (millis() - holdTimer >= 5000) { 
+          
+          // --- ЛОГИКА ПЕРЕХОДА ---
+          if (currentPage == "MAIN_PAGE") {
+              currentPage = "SET_PAGE";
+              isStaticDrawn = false;
+              isSetPageDrawn = false;
+              return; // Выходим, чтобы на следующем шаге отрисовать SET_PAGE
+          }
+          else if (currentPage == "SET_PAGE") {
+              currentPage = "MAIN_PAGE";
+              isStaticDrawn = false;
+              isSetPageDrawn = false;
+              return; // Выходим, чтобы на следующем шаге отрисовать MAIN_PAGE
+          }
       }
   }
+  else { // Кнопка ОТПУЩЕНА
+      // Сбрасываем флаг удержания, чтобы можно было нажать снова
+      static bool isButtonPressedFlag = false;
+      isButtonPressedFlag = false;
+  }
+
 
   // --- 3. ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
   if (currentPage != "MAIN_PAGE") {
-      // Таймер сбрасывается внутри библиотеки при активности,
-      // но наша проверка остается для возврата по таймауту.
+      // Сброс таймера происходит при вращении энкодера (в коде ниже)
       if (millis() - inactivityTimer > inactivityTime) {
           currentPage = "MAIN_PAGE";
           isStaticDrawn = false;
@@ -276,10 +295,10 @@ void loop() {
       }
   }
 
+
   // --- 4. ВЫПОЛНЕНИЕ ЛОГИКИ ТЕКУЩЕЙ СТРАНИЦЫ ---
 
   if (currentPage == "MAIN_PAGE") {
-      // --- ОТРИСОВКА ГЛАВНОЙ СТРАНИЦЫ ---
       if (!isStaticDrawn) { 
           drawBackground();
           isStaticDrawn = true; 
@@ -290,51 +309,43 @@ void loop() {
   }
   
   else if (currentPage == "SET_PAGE") {
-      // --- ОТРИСОВКА И ЛОГИКА СТРАНИЦЫ НАСТРОЕК ---
-      
-      // Отрисовка страницы настроек (только один раз при входе)
       if (!isSetPageDrawn) {
           drawSetpage();
           isSetPageDrawn = true; 
-          inactivityTimer = millis(); // Сброс таймера при входе в меню
+          inactivityTimer = millis(); 
       }
-      
+
       // --- ЛОГИКА ПЕРЕМЕЩЕНИЯ КУРСОРА ---
       
       // Проверка вращения ВПРАВО
       if (enc1.isRight()) {
-          inactivityTimer = millis(); // Сбрасываем таймер бездействия
+          inactivityTimer = millis(); 
           
-          selectedMenuItem++; // Двигаем курсор вниз по списку
-          if (selectedMenuItem > MENU_ITEM_EXIT) {
-              selectedMenuItem = MENU_ITEM_SET_TIME; // Цикличность
-          }
-          drawSetpage(); // Перерисовываем страницу для смены цвета выделения
+          selectedMenuItem++; 
+          if (selectedMenuItem > MENU_ITEM_EXIT) selectedMenuItem = MENU_ITEM_SET_TIME;
+          
+          drawSetpage(); 
       }
       
       // Проверка вращения ВЛЕВО
       if (enc1.isLeft()) {
-          inactivityTimer = millis(); // Сбрасываем таймер бездействия
+          inactivityTimer = millis(); 
           
-          selectedMenuItem--; // Двигаем курсор вверх по списку
-          if (selectedMenuItem < MENU_ITEM_SET_TIME) {
-              selectedMenuItem = MENU_ITEM_EXIT; // Цикличность
-          }
-          drawSetpage(); // Перерисовываем страницу для смены цвета выделения
+          selectedMenuItem--; 
+          if (selectedMenuItem < MENU_ITEM_SET_TIME) selectedMenuItem = MENU_ITEM_EXIT;
+          
+          drawSetpage(); 
       }
       
       // --- ЛОГИКА КЛИКА ПО КНОПКЕ ---
       if (enc1.isClick()) {
-          // Если выбран пункт "EXIT", возвращаемся на главный экран
           if (selectedMenuItem == MENU_ITEM_EXIT) {
               currentPage = "MAIN_PAGE";
               isStaticDrawn = false;
               isSetPageDrawn = false;
               tft->fillScreen(COLOR_BACKGROUND);
-              return; // Выходим, чтобы на следующем шаге отрисовать MAIN_PAGE
+              return;
           }
-          
-          // Здесь будет логика для входа в подпункты (например, Set Time)
       }
       
       delay(50);
