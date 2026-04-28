@@ -244,53 +244,53 @@ void setup() {
 void loop() {
   // --- 1. ОБЩИЙ ОПРОС ЭНКОДЕРА ---
   // Эта строка ОБЯЗАТЕЛЬНА для работы библиотеки GyverEncoder.
-  enc1.tick();
+  // Она должна быть в самом начале loop.
+  enc1.tick(); 
 
-  // --- 2. ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (> 5 сек) ---
-  // Эта проверка должна быть в самом начале, ДО проверки текущей страницы.
-  // Так мы меняем страницу ДО того, как логика страницы решит нас вернуть.
-  
-  // Если кнопка НАЖАТА
-  if (enc1.isPress()) {
-      // Если это НОВОЕ нажатие, запускаем таймер
-      static unsigned long holdTimer = 0;
-      static bool isButtonPressedFlag = false;
-
-      if (!isButtonPressedFlag) {
-          isButtonPressedFlag = true;
-          holdTimer = millis(); // Запускаем таймер
+  // --- 2. ПРОВЕРКА ПЕРЕХОДА МЕЖДУ СТРАНИЦАМИ (НАЧАЛО LOOP) ---
+  // Проверка удержания кнопки (для перехода)
+  if (enc1.isHolded()) {
+      if (currentPage == "MAIN_PAGE") {
+          currentPage = "SET_PAGE";
+          isStaticDrawn = false;
+          isSetPageDrawn = false;
+          inactivityTimer = millis(); // Сброс таймера при входе
+          return; // Выходим, чтобы на следующем шаге отрисовать SET_PAGE
       }
-      
-      // Проверяем, прошло ли 5 секунд
-      if (millis() - holdTimer >= 5000) { 
-          
-          // --- ЛОГИКА ПЕРЕХОДА ---
-          if (currentPage == "MAIN_PAGE") {
-              currentPage = "SET_PAGE";
-              isStaticDrawn = false;
-              isSetPageDrawn = false;
-              inactivityTimer = millis(); // Сбрасываем таймер бездействия
-              return; // Выходим, чтобы на следующем шаге отрисовать SET_PAGE
-          }
-          else if (currentPage == "SET_PAGE") {
-              currentPage = "MAIN_PAGE";
-              isStaticDrawn = false;
-              isSetPageDrawn = false;
-              inactivityTimer = millis();
-              return; // Выходим, чтобы на следующем шаге отрисовать MAIN_PAGE
-          }
+      else if (currentPage == "SET_PAGE") {
+          currentPage = "MAIN_PAGE";
+          isStaticDrawn = false;
+          isSetPageDrawn = false;
+          inactivityTimer = millis();
+          return; // Выходим, чтобы на следующем шаге отрисовать MAIN_PAGE
       }
   }
-  else { // Кнопка ОТПУЩЕНА
-      static bool isButtonPressedFlag = false;
-      isButtonPressedFlag = false;
+
+  // --- 3. ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
+  // Проверяем бездействие, если мы НЕ на главной странице
+  if (currentPage != "MAIN_PAGE") {
+      // Сброс таймера при любом вращении энкодера
+      if (enc1.isRight() || enc1.isLeft()) {
+          inactivityTimer = millis();
+      }
+
+      if (millis() - inactivityTimer > inactivityTime) {
+          currentPage = "MAIN_PAGE";
+          isStaticDrawn = false;
+          isSetPageDrawn = false;
+          tft->fillScreen(COLOR_BACKGROUND); // Очистка экрана перед возвратом
+          return; 
+      }
   }
 
 
-  // --- 3. ВЫПОЛНЕНИЕ ЛОГИКИ ТЕКУЩЕЙ СТРАНИЦЫ ---
+  // --- 4. ВЫПОЛНЕНИЕ ЛОГИКИ ТЕКУЩЕЙ СТРАНИЦЫ ---
 
   if (currentPage == "MAIN_PAGE") {
       // --- ОТРИСОВКА ГЛАВНОЙ СТРАНИЦЫ ---
+      
+      // Очищаем экран перед отрисовкой, чтобы не было артефактов
+      tft->fillScreen(COLOR_BACKGROUND); 
       
       if (!isStaticDrawn) { 
           drawBackground();
@@ -299,23 +299,30 @@ void loop() {
       
       drawDinamointerface(); 
       
-      delay(50);
+      // Заменяем delay() на неблокирующую задержку для плавной работы
+      static unsigned long lastMainTime = 0;
+      if (millis() - lastMainTime < 50) return;
+      lastMainTime = millis();
+      
   }
   
   else if (currentPage == "SET_PAGE") {
       // --- ОТРИСОВКА И ЛОГИКА СТРАНИЦЫ НАСТРОЕК ---
       
+      // Очищаем экран перед отрисовкой страницы настроек
+      tft->fillScreen(COLOR_BACKGROUND); 
+      
       if (!isSetPageDrawn) {
           drawSetpage();
           isSetPageDrawn = true; 
-          inactivityTimer = millis(); // Сброс таймера при входе в меню
+          inactivityTimer = millis(); 
       }
       
       // --- ЛОГИКА ПЕРЕМЕЩЕНИЯ КУРСОРА ---
       
       // Проверка вращения ВПРАВО
       if (enc1.isRight()) {
-          inactivityTimer = millis(); // Сбрасываем таймер бездействия
+          inactivityTimer = millis(); 
           
           selectedMenuItem++; 
           if (selectedMenuItem > MENU_ITEM_EXIT) selectedMenuItem = MENU_ITEM_SET_TIME;
@@ -332,7 +339,7 @@ void loop() {
           
           drawSetpage(); 
       }
-      
+
       // --- ЛОГИКА КЛИКА ПО КНОПКЕ ---
       if (enc1.isClick()) {
           if (selectedMenuItem == MENU_ITEM_EXIT) {
@@ -344,7 +351,10 @@ void loop() {
           }
       }
       
-      delay(50);
+      // Заменяем delay() на неблокирующую задержку для плавной работы энкодера
+      static unsigned long lastSetTime = 0;
+      if (millis() - lastSetTime < 50) return;
+      lastSetTime = millis();
   }
 }
 
@@ -513,7 +523,8 @@ void drawBackground() {
   tft->setTextSize(2);
   
   // --- ЗАГОЛОВОК СТРАНИЦЫ ---
-  tft->setCursor(120, 10); 
+  tft->setCursor(120, 10);
+  tft->setTextColor(COLOR_WHITE); 
   tft->print("SETTING");
 
   tft->setTextSize(1);
