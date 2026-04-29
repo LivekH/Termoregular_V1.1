@@ -334,7 +334,8 @@ void loop() {
       if (millis() - lastSetLoopTime < 50) return;
       lastSetLoopTime = millis();
   }
-  
+
+  // --- ЛОГИКА СТРАНИЦЫ НАСТРОЕК (SET_TIMER) ---
   else if (currentPage == "SET_TIMER") {
       // ---  ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
       if (millis() - inactivityTimer > inactivityTime) {
