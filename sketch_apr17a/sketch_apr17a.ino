@@ -111,11 +111,6 @@ Encoder enc1(CLK, DT, SW); // Создаем объект энкодера
       // Переменная для хранения текущей страницы
       String currentPage = "MAIN_PAGE"; // Начинаем на главной странице
 
-      // Переменные для отслеживания нажатий кнопки энкодера
-      unsigned long buttonPressTimer = 0; // Таймер для отсчета 5 секунд
-      bool isButtonPressedFlag = false;  // Флаг, что кнопка физически нажата
-      const long holdTime = 5000;         // Время удержания для перехода (5000 мс = 5 сек)
-
       // Переменные для отслеживания бездействия пользователя
       unsigned long inactivityTimer = 0; // Таймер для отслеживания последнего действия
       const long inactivityTime = 10000; // Время бездействия в мс (10000 мс = 10 сек)
@@ -245,103 +240,65 @@ void setup() {
 //-------Логика работы перехода по страницам--------
 
 void loop() {
-      // --- ОБЯЗАТЕЛЬНЫЙ ОПРОС ЭНКОДЕРА ---
-      enc1.tick();
+  // --- 1. ОБЯЗАТЕЛЬНЫЙ ОПРОС ЭНКОДЕРА ---
+  enc1.tick();
 
-      // --- 2. ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ (MAIN_PAGE) ---
-      // Эта логика работает ТОЛЬКО когда мы на главной странице.
-      if (currentPage == "MAIN_PAGE") {
-      
+  // --- 2. ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ (MAIN_PAGE) ---
+  if (currentPage == "MAIN_PAGE") {
       // --- ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (> 5 сек) ---
-      // Эта проверка ищет именно УДЕРЖАНИЕ, а не клик.
       if (enc1.isHolded()) {
-          // Очистка экрана перед отрисовкой новой страницы
           tft->fillScreen(COLOR_BACKGROUND);
-          
           currentPage = "SET_PAGE";
           isStaticDrawn = false;
           isSetPageDrawn = false;
-          inactivityTimer = millis(); // Сброс таймера
-          return; // Выходим, чтобы на следующем шаге начать отрисовку SET_PAGE
+          inactivityTimer = millis();
+          return;
       }
-      
+
       // --- ОТРИСОВКА MAIN_PAGE ---
-      // Если мы здесь, значит, удержания не было. Просто рисуем главную страницу.
-      
       if (!isStaticDrawn) { 
           drawBackground();
           isStaticDrawn = true; 
       }
-      
       drawDinamointerface(); 
 
-      // Задержка 
+      // Заменяем delay(50) на неблокирующую задержку
       static unsigned long lastMainLoopTime = 0;
       if (millis() - lastMainLoopTime < 50) return;
       lastMainLoopTime = millis();
   }
   
-      // --- 3. ЛОГИКА СТРАНИЦЫ НАСТРОЕК (SET_PAGE) ---
-      // Эта логика работает ТОЛЬКО когда мы на странице настроек.
-      else if (currentPage == "SET_PAGE") {
+  // --- 3. ЛОГИКА СТРАНИЦЫ НАСТРОЕК (SET_PAGE) ---
+  else if (currentPage == "SET_PAGE") {
       
-      // --- ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
-      // Сбрасываем таймер при ЛЮБОМ действии с кнопкой (клик или удержание)
-      // Это не вызывает переход, а только сбрасывает таймер.
-      // Проверяем, была ли нажата кнопка (клик или удержание)
-      bool buttonWasPressed = false;
-      if (enc1.isClick() || enc1.isHolded()) {
-          buttonWasPressed = true;
-          inactivityTimer = millis(); // Сбрасываем таймер
-      }
-
-      // Проверяем, не истекло ли время бездействия
+      // --- А) ОБРАБОТКА СОБЫТИЙ В САМОМ НАЧАЛЕ ---
+      // Это нужно, чтобы события не сбрасывались задержкой в конце.
+      
+      // 1) Проверка БЕЗДЕЙСТВИЯ (10 сек)
       if (millis() - inactivityTimer > inactivityTime) {
           tft->fillScreen(COLOR_BACKGROUND);
-          
           currentPage = "MAIN_PAGE";
           isStaticDrawn = false;
           isSetPageDrawn = false;
           return;
       }
       
-      // --- ОТРИСОВКА SET_PAGE ---
-      
-      if (!isSetPageDrawn) {
-          drawSetpage();
-          isSetPageDrawn = true; 
-          inactivityTimer = millis(); 
-      }
-      // --- ЛОГИКА ПЕРЕМЕЩЕНИЯ КУРСОРА ---
-      
-      // Проверяем, был ли поворот ВПРАВО
+      // 2) Проверка ВРАЩЕНИЯ ЭНКОДЕРА
       if (enc1.isRight()) {
-          // 1. Сбрасываем таймер бездействия при любом действии
           inactivityTimer = millis(); 
-           // 2. Двигаем курсор (увеличиваем номер выбранного пункта)
-          selectedMenuItem++;
-          // 3. Реализуем ЦИКЛИЧНОСТЬ: если вышли за последний пункт, возвращаемся на первый
-          if (selectedMenuItem > MENU_ITEM_EXIT) {
-              selectedMenuItem = MENU_ITEM_SET_TIME;
-          }
-          // Перерисовываем страницу, чтобы обновить выделение
+          selectedMenuItem++; 
+          if (selectedMenuItem > MENU_ITEM_EXIT) selectedMenuItem = MENU_ITEM_SET_TIME;
+          drawSetpage(); 
+      }
+      if (enc1.isLeft()) {
+          inactivityTimer = millis(); 
+          selectedMenuItem--; 
+          if (selectedMenuItem < MENU_ITEM_SET_TIME) selectedMenuItem = MENU_ITEM_EXIT;
           drawSetpage(); 
       }
       
-      // Проверяем, был ли поворот ВЛЕВО
-      if (enc1.isLeft()) {
-          // 1. Сбрасываем таймер бездействия
-          inactivityTimer = millis(); 
-          // 2. Двигаем курсор (уменьшаем номер выбранного пункта)
-          selectedMenuItem--;
-          // 3. Реализуем ЦИКЛИЧНОСТЬ: если ушли перед первый пункт, переходим на последний
-          if (selectedMenuItem < MENU_ITEM_SET_TIME) {
-              selectedMenuItem = MENU_ITEM_EXIT;
-          }
-          // 4. Перерисовываем страницу
-          drawSetpage(); 
-      }
-      // --- ВЫХОД ПО КНОПКЕ НА ПУНКТЕ "EXIT" ---
+      // 3) ПРОВЕРКА КЛИКА ПО КНОПКЕ (ВЫХОД ЧЕРЕЗ EXIT)
+      // Теперь эта проверка стоит РАНЬШЕ задержки.
       if (enc1.isClick()) {
           if (selectedMenuItem == MENU_ITEM_EXIT) {
               tft->fillScreen(COLOR_BACKGROUND);
@@ -350,12 +307,21 @@ void loop() {
               isSetPageDrawn = false;
               return;
           }
+      }
 
-      //   задержка по времени
+      // --- Б) ОТРИСОВКА СТРАНИЦЫ (ЕСЛИ НУЖНО) ---
+      // Отрисовка происходит только если мы не вышли из функции по 'return' выше.
+      if (!isSetPageDrawn) {
+          drawSetpage();
+          isSetPageDrawn = true; 
+          inactivityTimer = millis(); 
+      }
+
+      // --- В) ЗАДЕРЖКА В КОНЦЕ ---
+      // Теперь задержка не мешает обработке событий.
       static unsigned long lastSetLoopTime = 0;
       if (millis() - lastSetLoopTime < 50) return;
       lastSetLoopTime = millis();
-    }
   }
 }
 
