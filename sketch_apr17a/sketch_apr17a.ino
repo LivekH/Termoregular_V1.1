@@ -547,6 +547,9 @@ void drawSetpage() {
   }
       tft->setCursor(20, 40); 
       tft->print("Set Time: ......... ");
+      tft->print("00");
+      tft->print(":");
+      tft->print("00");
   
       // --- ПУНКТ 2: Set Temperature ---
       if (selectedMenuItem == MENU_ITEM_SET_TEMP) {
@@ -557,6 +560,7 @@ void drawSetpage() {
   }
       tft->setCursor(20, 55);
       tft->print("Set Temperature: .. ");
+      tft->print("000");
 
       // --- ПУНКТ 3: Set Hysteresis ---
       if (selectedMenuItem == MENU_ITEM_SET_HYST) {
@@ -567,6 +571,7 @@ void drawSetpage() {
   }
       tft->setCursor(20, 70);
       tft->print("Set Hysteresis: ... ");
+      tft->print("00");
 
       // --- ПУНКТ 4: Set Frosting ---
       if (selectedMenuItem == MENU_ITEM_SET_FROST) {
@@ -577,6 +582,7 @@ void drawSetpage() {
   }
       tft->setCursor(20, 85);
       tft->print("Set Frosting: ..... ");
+      tft->print("00");
 
       // --- ПУНКТ 5: Set Timer ---
       if (selectedMenuItem == MENU_ITEM_SET_TIMER) {
