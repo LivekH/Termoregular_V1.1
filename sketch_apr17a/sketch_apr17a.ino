@@ -278,9 +278,9 @@ void loop() {
       if (millis() - inactivityTimer > inactivityTime) {
           tft->fillScreen(COLOR_BACKGROUND);
           currentPage = "MAIN_PAGE";
-          isStaticDrawn = false;
-          isSetPageDrawn = false;
-          isSetTimerDrawn = false;
+          isStaticDrawn = false; // Сбрасываем
+          isSetPageDrawn = false; // флаги
+          isSetTimerDrawn = false; // страниц
           return;
       }
       
@@ -304,18 +304,18 @@ void loop() {
           if (selectedMenuItem == MENU_ITEM_EXIT) {
               tft->fillScreen(COLOR_BACKGROUND);
               currentPage = "MAIN_PAGE";
-              isStaticDrawn = false;
-              isSetPageDrawn = false;
-              isSetTimerDrawn = false;
+              isStaticDrawn = false; // Сбрасываем
+              isSetPageDrawn = false; //флаги
+              isSetTimerDrawn = false; // страниц
               return;
           }
           // Если курсор на "Set Timer" - переходим на страницу таймеров
           else if (selectedMenuItem == MENU_ITEM_SET_TIMER) {
               tft->fillScreen(COLOR_BACKGROUND);
               currentPage = "SET_TIMER";
-              isStaticDrawn = false;
-              isSetPageDrawn = false;
-              isSetTimerDrawn = false;
+              isStaticDrawn = false; // Сбрасываем
+              isSetPageDrawn = false; // флаги
+              isSetTimerDrawn = false; // страниц
               inactivityTimer = millis();
               return;
           }
@@ -345,7 +345,7 @@ void loop() {
           currentPage = "MAIN_PAGE";
           isStaticDrawn = false;
           isSetPageDrawn = false;
-          isSetTimerDrawn = false; // Не забываем сбросить флаг этой страницы!
+          isSetTimerDrawn = false; 
           return;
       }
 
