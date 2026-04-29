@@ -111,11 +111,6 @@ Encoder enc1(CLK, DT, SW); // Создаем объект энкодера
       // Переменная для хранения текущей страницы
       String currentPage = "MAIN_PAGE"; // Начинаем на главной странице
 
-      // Переменные для отслеживания нажатий кнопки энкодера
-      unsigned long buttonPressTimer = 0; // Таймер для отсчета 5 секунд
-      bool isButtonPressedFlag = false;  // Флаг, что кнопка физически нажата
-      const long holdTime = 5000;         // Время удержания для перехода (5000 мс = 5 сек)
-
       // Переменные для отслеживания бездействия пользователя
       unsigned long inactivityTimer = 0; // Таймер для отслеживания последнего действия
       const long inactivityTime = 10000; // Время бездействия в мс (10000 мс = 10 сек)
@@ -245,107 +240,129 @@ void setup() {
 //-------Логика работы перехода по страницам--------
 
 void loop() {
-      // --- ОБЯЗАТЕЛЬНЫЙ ОПРОС ЭНКОДЕРА ---
-      enc1.tick();
+  // --- ОБЯЗАТЕЛЬНЫЙ ОПРОС ЭНКОДЕРА ---
+  enc1.tick();
 
-      // --- 2. ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ (MAIN_PAGE) ---
-      // Эта логика работает ТОЛЬКО когда мы на главной странице.
-      if (currentPage == "MAIN_PAGE") {
-      
+  // --- ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ (MAIN_PAGE) ---
+  if (currentPage == "MAIN_PAGE") {
       // --- ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (> 5 сек) ---
-      // Эта проверка ищет именно УДЕРЖАНИЕ, а не клик.
       if (enc1.isHolded()) {
-          // Очистка экрана перед отрисовкой новой страницы
           tft->fillScreen(COLOR_BACKGROUND);
-          
           currentPage = "SET_PAGE";
           isStaticDrawn = false;
           isSetPageDrawn = false;
-          inactivityTimer = millis(); // Сброс таймера
-          return; // Выходим, чтобы на следующем шаге начать отрисовку SET_PAGE
+          inactivityTimer = millis();
+          return;
       }
-      
+
       // --- ОТРИСОВКА MAIN_PAGE ---
-      // Если мы здесь, значит, удержания не было. Просто рисуем главную страницу.
-      
       if (!isStaticDrawn) { 
           drawBackground();
           isStaticDrawn = true; 
       }
-      
       drawDinamointerface(); 
 
-      // Задержка 
+      // Заменяем delay(50) на неблокирующую задержку
       static unsigned long lastMainLoopTime = 0;
       if (millis() - lastMainLoopTime < 50) return;
       lastMainLoopTime = millis();
   }
   
-      // --- 3. ЛОГИКА СТРАНИЦЫ НАСТРОЕК (SET_PAGE) ---
-      // Эта логика работает ТОЛЬКО когда мы на странице настроек.
-      else if (currentPage == "SET_PAGE") {
+  // --- ЛОГИКА СТРАНИЦЫ НАСТРОЕК (SET_PAGE) ---
+  else if (currentPage == "SET_PAGE") {
       
-      // --- ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
-      // Сбрасываем таймер при ЛЮБОМ действии с кнопкой (клик или удержание)
-      // Это не вызывает переход, а только сбрасывает таймер.
-      if (enc1.isClick() || enc1.isHolded()) {
-          inactivityTimer = millis(); 
-      }
-
-      // Проверяем, не истекло ли время бездействия
+      // --- ОБРАБОТКА СОБЫТИЙ В САМОМ НАЧАЛЕ ---
+      // Это нужно, чтобы события не сбрасывались задержкой в конце.
+      
+      //  Проверка БЕЗДЕЙСТВИЯ (10 сек)
       if (millis() - inactivityTimer > inactivityTime) {
           tft->fillScreen(COLOR_BACKGROUND);
-          
           currentPage = "MAIN_PAGE";
-          isStaticDrawn = false;
-          isSetPageDrawn = false;
+          isStaticDrawn = false; // Сбрасываем
+          isSetPageDrawn = false; // флаги
+          isSetTimerDrawn = false; // страниц
           return;
       }
       
-      // --- ОТРИСОВКА SET_PAGE ---
+      //  Проверка ВРАЩЕНИЯ ЭНКОДЕРА
+      if (enc1.isRight()) {
+          inactivityTimer = millis(); 
+          selectedMenuItem++; 
+          if (selectedMenuItem > MENU_ITEM_EXIT) selectedMenuItem = MENU_ITEM_SET_TIME;
+          drawSetpage(); 
+      }
+      if (enc1.isLeft()) {
+          inactivityTimer = millis(); 
+          selectedMenuItem--; 
+          if (selectedMenuItem < MENU_ITEM_SET_TIME) selectedMenuItem = MENU_ITEM_EXIT;
+          drawSetpage(); 
+      }
       
+      // --- ОБЪЕДИНЕННАЯ ЛОГИКА КЛИКА ПО КНОПКЕ ---
+      if (enc1.isClick()) {
+          // Если курсор на "EXIT" - выходим на главную
+          if (selectedMenuItem == MENU_ITEM_EXIT) {
+              tft->fillScreen(COLOR_BACKGROUND);
+              currentPage = "MAIN_PAGE";
+              isStaticDrawn = false; // Сбрасываем
+              isSetPageDrawn = false; //флаги
+              isSetTimerDrawn = false; // страниц
+              return;
+          }
+          // Если курсор на "Set Timer" - переходим на страницу таймеров
+          else if (selectedMenuItem == MENU_ITEM_SET_TIMER) {
+              tft->fillScreen(COLOR_BACKGROUND);
+              currentPage = "SET_TIMER";
+              isStaticDrawn = false; // Сбрасываем
+              isSetPageDrawn = false; // флаги
+              isSetTimerDrawn = false; // страниц
+              inactivityTimer = millis();
+              return;
+          }
+      }
+      
+      
+      // --- ОТРИСОВКА СТРАНИЦЫ (ЕСЛИ НУЖНО) ---
+      // Отрисовка происходит только если мы не вышли из функции по 'return' выше.
       if (!isSetPageDrawn) {
           drawSetpage();
           isSetPageDrawn = true; 
           inactivityTimer = millis(); 
       }
-      // --- ЛОГИКА ПЕРЕМЕЩЕНИЯ КУРСОРА ---
-      
-      // Проверяем, был ли поворот ВПРАВО
-      if (enc1.isRight()) {
-          // 1. Сбрасываем таймер бездействия при любом действии
-          inactivityTimer = millis(); 
-           // 2. Двигаем курсор (увеличиваем номер выбранного пункта)
-          selectedMenuItem++;
-          // 3. Реализуем ЦИКЛИЧНОСТЬ: если вышли за последний пункт, возвращаемся на первый
-          if (selectedMenuItem > MENU_ITEM_EXIT) {
-              selectedMenuItem = MENU_ITEM_SET_TIME;
-          }
-          // Перерисовываем страницу, чтобы обновить выделение
-          drawSetpage(); 
-      }
-      
-      // Проверяем, был ли поворот ВЛЕВО
-      if (enc1.isLeft()) {
-          // 1. Сбрасываем таймер бездействия
-          inactivityTimer = millis(); 
-          // 2. Двигаем курсор (уменьшаем номер выбранного пункта)
-          selectedMenuItem--;
-          // 3. Реализуем ЦИКЛИЧНОСТЬ: если ушли перед первый пункт, переходим на последний
-          if (selectedMenuItem < MENU_ITEM_SET_TIME) {
-              selectedMenuItem = MENU_ITEM_EXIT;
-          }
-          // 4. Перерисовываем страницу
-          drawSetpage(); 
-      }
 
-      //   задержка по времени
+      // --- ЗАДЕРЖКА В КОНЦЕ ---
+      // Теперь задержка не мешает обработке событий.
       static unsigned long lastSetLoopTime = 0;
       if (millis() - lastSetLoopTime < 50) return;
       lastSetLoopTime = millis();
   }
-}
 
+  // --- ЛОГИКА СТРАНИЦЫ НАСТРОЕК (SET_TIMER) ---
+  else if (currentPage == "SET_TIMER") {
+      // ---  ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
+      if (millis() - inactivityTimer > inactivityTime) {
+          tft->fillScreen(COLOR_BACKGROUND);
+          currentPage = "MAIN_PAGE";
+          isStaticDrawn = false;
+          isSetPageDrawn = false;
+          isSetTimerDrawn = false; 
+          return;
+      }
+
+      // --- ОТРИСОВКА СТРАНИЦЫ SET_TIMER ---
+      // Здесь будет код для отрисовки страницы таймеров
+      // --- ОТРИСОВКА СТРАНИЦЫ SET_TIMER ---
+          if (!isSetTimerDrawn) {
+          drawTimerpage(); 
+          isSetTimerDrawn = true; 
+          inactivityTimer = millis(); 
+          }
+      // --- В) ЗАДЕРЖКА В КОНЦЕ ---
+      static unsigned long lastSetTimerTime = 0;
+      if (millis() - lastSetTimerTime < 50) return;
+      lastSetTimerTime = millis();
+  }
+}
 
 
 // Загружаем главную страницу с отрисовкой надписей и шкал приборов
@@ -440,13 +457,14 @@ void drawBackground() {
      
       // --- ПОДПИСЬ ДЛЯ ТЕМПЕРАТУРЫ ---
       // Координаты (205, 190) - под центром шкалы температуры
-     tft->setTextColor(COLOR_WHITE);
-     tft->setTextSize(2); // Размер 2 для подписей
-     tft->setCursor(221, 173);// координаты установки х=235, у=173
-     tft->print((char)248);   // символ градусов!
-     tft->setCursor(233, 173);// координаты установки х=230, у=173
-     tft->print("C");
+      tft->setTextColor(COLOR_WHITE);
+      tft->setTextSize(2); // Размер 2 для подписей
+      tft->setCursor(221, 173);// координаты установки х=235, у=173
+      tft->print((char)248);   // символ градусов!
+      tft->setCursor(233, 173);// координаты установки х=230, у=173
+      tft->print("C");
      }
+
 // Рисуем динамические части интерфейса, стрелки digital indicator,clock, меню выбора работы   
 void drawDinamointerface() {
 

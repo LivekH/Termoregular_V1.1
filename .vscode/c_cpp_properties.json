@@ -8,6 +8,7 @@
         {
             "name": "PlatformIO",
             "includePath": [
+                "${workspaceFolder}/**",
                 "g:/V1/Termoregular_V1.1/include",
                 "g:/V1/Termoregular_V1.1/src",
                 "C:/Users/itach/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
@@ -22,6 +23,7 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
+                    "${workspaceFolder}/**",
                     "g:/V1/Termoregular_V1.1/include",
                     "g:/V1/Termoregular_V1.1/src",
                     "C:/Users/itach/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
