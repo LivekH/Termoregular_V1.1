@@ -338,14 +338,23 @@ void loop() {
           // 4. Перерисовываем страницу
           drawSetpage(); 
       }
+      // --- ВЫХОД ПО КНОПКЕ НА ПУНКТЕ "EXIT" ---
+      if (enc1.isClick()) {
+          if (selectedMenuItem == MENU_ITEM_EXIT) {
+              tft->fillScreen(COLOR_BACKGROUND);
+              currentPage = "MAIN_PAGE";
+              isStaticDrawn = false;
+              isSetPageDrawn = false;
+              return;
+          }
 
       //   задержка по времени
       static unsigned long lastSetLoopTime = 0;
       if (millis() - lastSetLoopTime < 50) return;
       lastSetLoopTime = millis();
+    }
   }
 }
-
 
 
 // Загружаем главную страницу с отрисовкой надписей и шкал приборов
