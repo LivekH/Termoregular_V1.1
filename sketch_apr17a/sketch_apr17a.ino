@@ -280,6 +280,7 @@ void loop() {
           currentPage = "MAIN_PAGE";
           isStaticDrawn = false;
           isSetPageDrawn = false;
+          isSetTimerDrawn = false;
           return;
       }
       
@@ -305,6 +306,7 @@ void loop() {
               currentPage = "MAIN_PAGE";
               isStaticDrawn = false;
               isSetPageDrawn = false;
+              isSetTimerDrawn = false;
               return;
           }
           // Если курсор на "Set Timer" - переходим на страницу таймеров
