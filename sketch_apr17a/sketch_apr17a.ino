@@ -349,7 +349,12 @@ void loop() {
 
       // --- ОТРИСОВКА СТРАНИЦЫ SET_TIMER ---
       // Здесь будет код для отрисовки страницы таймеров
-
+      // --- ОТРИСОВКА СТРАНИЦЫ SET_TIMER ---
+          if (!isSetTimerDrawn) {
+          drawTimerpage(); 
+          isSetTimerDrawn = true; 
+          inactivityTimer = millis(); 
+          }
       // --- В) ЗАДЕРЖКА В КОНЦЕ ---
       static unsigned long lastSetTimerTime = 0;
       if (millis() - lastSetTimerTime < 50) return;
