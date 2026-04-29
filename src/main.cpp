@@ -350,14 +350,37 @@ void loop() {
       }
 
       // --- ОТРИСОВКА СТРАНИЦЫ SET_TIMER ---
-      // Здесь будет код для отрисовки страницы таймеров
+      //  Проверка ВРАЩЕНИЯ ЭНКОДЕРА И КНОПКИ ЭНКОДЕРА
+      if (enc1.isClick()) {
+          // Если курсор на "EXIT" - выходим на главную
+          if (selectedTimerItem == MENU_ITEM_EXIT_TIMER) {
+              tft->fillScreen(COLOR_BACKGROUND);
+              currentPage = "MAIN_PAGE";
+              isStaticDrawn = false; // Сбрасываем
+              isSetPageDrawn = false; //флаги
+              isSetTimerDrawn = false; // страниц
+              return;
+          }
+      }
+      if (enc1.isRight()) {
+          inactivityTimer = millis(); 
+          selectedTimerItem++; 
+          if (selectedTimerItem > MENU_ITEM_EXIT_TIMER) selectedTimerItem = MENU_ITEM_TIMER_1;
+          drawTimerpage(); 
+      }
+      if (enc1.isLeft()) {
+          inactivityTimer = millis(); 
+          selectedTimerItem--; 
+          if (selectedTimerItem < MENU_ITEM_TIMER_1) selectedTimerItem = MENU_ITEM_EXIT_TIMER;
+          drawTimerpage(); 
+      }
       // --- ОТРИСОВКА СТРАНИЦЫ SET_TIMER ---
           if (!isSetTimerDrawn) {
           drawTimerpage(); 
           isSetTimerDrawn = true; 
           inactivityTimer = millis(); 
           }
-      // --- В) ЗАДЕРЖКА В КОНЦЕ ---
+      // --- ЗАДЕРЖКА В КОНЦЕ ---
       static unsigned long lastSetTimerTime = 0;
       if (millis() - lastSetTimerTime < 50) return;
       lastSetTimerTime = millis();
@@ -470,7 +493,7 @@ void drawDinamointerface() {
 
       // временно размещаем индикацию часов для определения координат!!!! 
       tft->setCursor(15, 50); 
-      // Выводим надпись <00:00>
+      // Выводим надпись <00:00> для времени
       tft->print("00:00");
       
       // ---  СТРЕЛКИ ТЕМПЕРАТУРЫ ---
@@ -547,6 +570,10 @@ void drawSetpage() {
   }
       tft->setCursor(20, 40); 
       tft->print("Set Time: ......... ");
+      tft->setTextColor(COLOR_WHITE);
+      tft->print("00");
+      tft->print(":");
+      tft->print("00");
   
       // --- ПУНКТ 2: Set Temperature ---
       if (selectedMenuItem == MENU_ITEM_SET_TEMP) {
@@ -557,6 +584,8 @@ void drawSetpage() {
   }
       tft->setCursor(20, 55);
       tft->print("Set Temperature: .. ");
+      tft->setTextColor(COLOR_WHITE);
+      tft->print("000");
 
       // --- ПУНКТ 3: Set Hysteresis ---
       if (selectedMenuItem == MENU_ITEM_SET_HYST) {
@@ -567,6 +596,8 @@ void drawSetpage() {
   }
       tft->setCursor(20, 70);
       tft->print("Set Hysteresis: ... ");
+      tft->setTextColor(COLOR_WHITE);
+      tft->print("00");
 
       // --- ПУНКТ 4: Set Frosting ---
       if (selectedMenuItem == MENU_ITEM_SET_FROST) {
@@ -577,6 +608,8 @@ void drawSetpage() {
   }
       tft->setCursor(20, 85);
       tft->print("Set Frosting: ..... ");
+      tft->setTextColor(COLOR_WHITE);
+      tft->print("00");
 
       // --- ПУНКТ 5: Set Timer ---
       if (selectedMenuItem == MENU_ITEM_SET_TIMER) {
@@ -608,11 +641,16 @@ void drawTimerpage() {
      // --- ЗАГОЛОВОК СТРАНИЦЫ ---
      tft->setCursor(85, 10); 
      tft->print("TIMER SETTINGS");
-
-     // --- ТАЙМЕР 1 ---
      tft->setTextSize(1);
+     
+     // --- ТАЙМЕР 1 ---
+     if (selectedTimerItem == MENU_ITEM_TIMER_1) {
+      tft->setTextColor(COLOR_YELLOW);
+  } 
+      else {
+      tft->setTextColor(COLOR_WHITE);
+  }
      tft->setCursor(30, 55);
-     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
      tft->print("Timer 1");
 
      // Меню таймера
@@ -642,8 +680,13 @@ void drawTimerpage() {
      tft->print("Timer Memory/Clear");
 
      // --- ТАЙМЕР 2 ---
+     if (selectedTimerItem == MENU_ITEM_TIMER_2) {
+      tft->setTextColor(COLOR_YELLOW);
+  } 
+      else {
+      tft->setTextColor(COLOR_WHITE);
+  }
      tft->setCursor(30, 130);
-     tft->setTextColor(COLOR_WHITE);
      tft->print("Timer 2");
 
      // Меню таймера
@@ -672,9 +715,13 @@ void drawTimerpage() {
      tft->print("Timer Memory/Clear");
 
      // --- ТАЙМЕР 3 ---
-     tft->setTextSize(1);
+     if (selectedTimerItem == MENU_ITEM_TIMER_3) {
+      tft->setTextColor(COLOR_YELLOW);
+  } 
+      else {
+      tft->setTextColor(COLOR_WHITE);
+  }
      tft->setCursor(190, 55);
-     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
      tft->print("Timer 3");
 
      // Меню таймера
@@ -703,11 +750,16 @@ void drawTimerpage() {
      tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
      tft->print("Timer Memory/Clear");
 
-     // --- ТАЙМЕР 4 ---
+     // --- ПУНКТ 4: TIMER 4 ---
+      if (selectedTimerItem == MENU_ITEM_TIMER_4) {
+      tft->setTextColor(COLOR_YELLOW);
+  } 
+      else {
+      tft->setTextColor(COLOR_WHITE);
+  }
      tft->setCursor(190, 130);
-     tft->setTextColor(COLOR_WHITE);
      tft->print("Timer 4");
-
+      
      // Меню таймера
      tft->setCursor(175, 145);
      tft->setTextColor(COLOR_WHITE); //при установке часов  меняем цвет на жёлтый
@@ -733,7 +785,14 @@ void drawTimerpage() {
      tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
      tft->print("Timer Memory/Clear");
 
-     // Устанавливаем надпись выход на "drawBackground" на главнуй страницу
-     tft->setCursor(148, 200);
-     tft->print("EXIT");
-  }  
+     // --- ПУНКТ 5: EXIT ---
+      if (selectedTimerItem == MENU_ITEM_EXIT_TIMER) {
+      tft->setTextColor(COLOR_YELLOW);
+  } 
+      else {
+      tft->setTextColor(COLOR_WHITE);
+  }
+      tft->setCursor(148, 200);
+      tft->print("EXIT");
+}
+    
