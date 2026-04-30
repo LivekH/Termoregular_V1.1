@@ -98,6 +98,8 @@ Encoder enc1(CLK, DT, SW); // Создаем объект энкодера
       void drawDinamointerface();
       void drawSetpage();
       void drawTimerpage();
+      void updateSetPageItem(byte itemIndex, bool isSelected);
+      void updateTimerPageItem(byte itemIndex, bool isSelected);
 
       // ---  ПЕРЕМЕННЫЕ ДЛЯ ЛОГИКИ ---
 
@@ -285,19 +287,23 @@ void loop() {
       }
       
       //  Проверка ВРАЩЕНИЯ ЭНКОДЕРА
-      if (enc1.isRight()) {
-          inactivityTimer = millis(); 
-          selectedMenuItem++; 
-          if (selectedMenuItem > MENU_ITEM_EXIT) selectedMenuItem = MENU_ITEM_SET_TIME;
-          //drawSetpage(); 
-      }
-      if (enc1.isLeft()) {
-          inactivityTimer = millis(); 
-          selectedMenuItem--; 
-          if (selectedMenuItem < MENU_ITEM_SET_TIME) selectedMenuItem = MENU_ITEM_EXIT;
-          //drawSetpage(); 
-      }
-      
+      byte prevItem = selectedMenuItem;
+
+if (enc1.isRight()) {
+  inactivityTimer = millis();
+  selectedMenuItem++;
+  if (selectedMenuItem > MENU_ITEM_EXIT) selectedMenuItem = MENU_ITEM_SET_TIME;
+  updateSetPageItem(prevItem, false);  // Ставим белый цвет для старого пункта
+  updateSetPageItem(selectedMenuItem, true); // Ставим жёлтый цвет для нового пункта
+}
+if (enc1.isLeft()) {
+  inactivityTimer = millis();
+  selectedMenuItem--;
+  if (selectedMenuItem < MENU_ITEM_SET_TIME) selectedMenuItem = MENU_ITEM_EXIT;
+  updateSetPageItem(prevItem, false);
+  updateSetPageItem(selectedMenuItem, true);
+}
+
       // --- ОБЪЕДИНЕННАЯ ЛОГИКА КЛИКА ПО КНОПКЕ ---
       if (enc1.isClick()) {
           // Если курсор на "EXIT" - выходим на главную
@@ -351,7 +357,23 @@ void loop() {
 
       // --- ОТРИСОВКА СТРАНИЦЫ SET_TIMER ---
       //  Проверка ВРАЩЕНИЯ ЭНКОДЕРА И КНОПКИ ЭНКОДЕРА
-      if (enc1.isClick()) {
+      byte prevTimerItem = selectedTimerItem;
+
+if (enc1.isRight()) {
+  inactivityTimer = millis();
+  selectedTimerItem++;
+  if (selectedTimerItem > MENU_ITEM_EXIT_TIMER) selectedTimerItem = MENU_ITEM_TIMER_1;
+  updateTimerPageItem(prevTimerItem, false);
+  updateTimerPageItem(selectedTimerItem, true);
+}
+if (enc1.isLeft()) {
+  inactivityTimer = millis();
+  selectedTimerItem--;
+  if (selectedTimerItem < MENU_ITEM_TIMER_1) selectedTimerItem = MENU_ITEM_EXIT_TIMER;
+  updateTimerPageItem(prevTimerItem, false);
+  updateTimerPageItem(selectedTimerItem, true);
+}
+if (enc1.isClick()) {
           // Если курсор на "EXIT" - выходим на главную
           if (selectedTimerItem == MENU_ITEM_EXIT_TIMER) {
               tft->fillScreen(COLOR_BACKGROUND);
@@ -361,19 +383,7 @@ void loop() {
               isSetTimerDrawn = false; // страниц
               return;
           }
-      }
-      if (enc1.isRight()) {
-          inactivityTimer = millis(); 
-          selectedTimerItem++; 
-          if (selectedTimerItem > MENU_ITEM_EXIT_TIMER) selectedTimerItem = MENU_ITEM_TIMER_1;
-          drawTimerpage(); 
-      }
-      if (enc1.isLeft()) {
-          inactivityTimer = millis(); 
-          selectedTimerItem--; 
-          if (selectedTimerItem < MENU_ITEM_TIMER_1) selectedTimerItem = MENU_ITEM_EXIT_TIMER;
-          drawTimerpage(); 
-      }
+}
       // --- ОТРИСОВКА СТРАНИЦЫ SET_TIMER ---
           if (!isSetTimerDrawn) {
           drawTimerpage(); 
@@ -385,8 +395,131 @@ void loop() {
       if (millis() - lastSetTimerTime < 50) return;
       lastSetTimerTime = millis();
   }
+ }
+
+
+// --- ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ПУНКТА МЕНЮ В SET_PAGE ---
+void updateSetPageItem(byte itemIndex, bool isSelected) {
+  const int itemHeight = 20;
+  const int startY = 40;
+  int x = 20, y = startY + itemIndex * itemHeight;
+
+  tft->setCursor(x, y);
+
+  // ПРОХОД 1: стираем старый текст — перекрашиваем в цвет фона
+  tft->setTextColor(COLOR_BACKGROUND);
+  switch (itemIndex) {
+    case MENU_ITEM_SET_TIME:
+      tft->print("Set Time: ......... 00:00");
+      break;
+    case MENU_ITEM_SET_TEMP:
+      tft->print("Set Temperature: .. 000");
+      break;
+    case MENU_ITEM_SET_HYST:
+      tft->print("Set Hysteresis: ... 00");
+      break;
+    case MENU_ITEM_SET_FROST:
+      tft->print("Set Frosting: ..... 00");
+      break;
+    case MENU_ITEM_SET_TIMER:
+      tft->print("Set Timer:");
+      break;
+    case MENU_ITEM_EXIT:
+      tft->print("EXIT");
+      break;
+  }
+
+  // ПРОХОД 2: рисуем текст нужным цветом
+  if (isSelected) {
+    tft->setTextColor(COLOR_YELLOW);
+  } else {
+    tft->setTextColor(COLOR_WHITE);
+  }
+  tft->setCursor(x, y); // Обязательно повторно устанавливаем курсор!
+  switch (itemIndex) {
+    case MENU_ITEM_SET_TIME:
+      tft->print("Set Time: ......... 00:00");
+      break;
+    case MENU_ITEM_SET_TEMP:
+      tft->print("Set Temperature: .. 000");
+      break;
+    case MENU_ITEM_SET_HYST:
+      tft->print("Set Hysteresis: ... 00");
+      break;
+    case MENU_ITEM_SET_FROST:
+      tft->print("Set Frosting: ..... 00");
+      break;
+    case MENU_ITEM_SET_TIMER:
+      tft->print("Set Timer:");
+      break;
+    case MENU_ITEM_EXIT:
+      tft->print("EXIT");
+      break;
+  }
 }
 
+
+// --- ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ПУНКТА МЕНЮ В SET_TIMER ---
+void updateTimerPageItem(byte itemIndex, bool isSelected) {
+  const int itemHeight = 20;
+  const int startY = 40;
+  int x = 20, y = startY + itemIndex * itemHeight;
+
+  tft->setCursor(x, y);
+
+  // ПРОХОД 1: стираем старый текст — перекрашиваем в цвет фона
+  tft->setTextColor(COLOR_BACKGROUND);
+  switch (itemIndex) {
+    case MENU_ITEM_TIMER_1:
+      tft->print("Timer 1: ");
+      tft->print(timer1);
+      break;
+    case MENU_ITEM_TIMER_2:
+      tft->print("Timer 2: ");
+      tft->print(timer2);
+      break;
+    case MENU_ITEM_TIMER_3:
+      tft->print("Timer 3: ");
+      tft->print(timer3);
+      break;
+    case MENU_ITEM_TIMER_4:
+      tft->print("Timer 4: ");
+      tft->print(timer4);
+      break;
+    case MENU_ITEM_EXIT_TIMER:
+      tft->print("EXIT");
+      break;
+  }
+
+  // ПРОХОД 2: рисуем текст нужным цветом
+  if (isSelected) {
+    tft->setTextColor(COLOR_YELLOW);
+  } else {
+    tft->setTextColor(COLOR_WHITE);
+  }
+  tft->setCursor(x, y); // Обязательно повторно устанавливаем курсор!
+  switch (itemIndex) {
+    case MENU_ITEM_TIMER_1:
+      tft->print("Timer 1: ");
+      tft->print(timer1);
+      break;
+    case MENU_ITEM_TIMER_2:
+      tft->print("Timer 2: ");
+      tft->print(timer2);
+      break;
+    case MENU_ITEM_TIMER_3:
+      tft->print("Timer 3: ");
+      tft->print(timer3);
+      break;
+    case MENU_ITEM_TIMER_4:
+      tft->print("Timer 4: ");
+      tft->print(timer4);
+      break;
+    case MENU_ITEM_EXIT_TIMER:
+      tft->print("EXIT");
+      break;
+  }
+ }
 
 // Загружаем главную страницу с отрисовкой надписей и шкал приборов
 void drawBackground() {
@@ -550,249 +683,36 @@ void drawDinamointerface() {
 
 // Рисуем страницу настроек
 void drawSetpage() {
-      tft->fillScreen(COLOR_BACKGROUND);
-      tft->setTextSize(2);
-  
-      // --- ЗАГОЛОВОК СТРАНИЦЫ ---
-      tft->setCursor(120, 10);
-      tft->setTextColor(COLOR_WHITE); 
-      tft->print("SETTING");
+  tft->fillScreen(COLOR_BACKGROUND);
+  tft->setTextSize(2);
 
-      tft->setTextSize(1);
-  
-      // --- ПУНКТ 1: Set Time ---
-      // Проверяем, выбран ли этот пункт (курсор на нем)
-      if (selectedMenuItem == MENU_ITEM_SET_TIME) {
-      tft->setTextColor(COLOR_YELLOW); // Цвет для выбранного пункта
-  } 
-      else {
-      tft->setTextColor(COLOR_WHITE); // Цвет для невыбранных пунктов
-  }
-      tft->setCursor(20, 40); 
-      tft->print("Set Time: ......... ");
-      tft->setTextColor(COLOR_WHITE);
-      tft->print("00");
-      tft->print(":");
-      tft->print("00");
-  
-      // --- ПУНКТ 2: Set Temperature ---
-      if (selectedMenuItem == MENU_ITEM_SET_TEMP) {
-      tft->setTextColor(COLOR_YELLOW);
-  } 
-      else {
-      tft->setTextColor(COLOR_WHITE);
-  }
-      tft->setCursor(20, 55);
-      tft->print("Set Temperature: .. ");
-      tft->setTextColor(COLOR_WHITE);
-      tft->print("000");
+  // Заголовок страницы
+  tft->setCursor(120, 10);
+  tft->setTextColor(COLOR_WHITE);
+  tft->print("SETTING");
 
-      // --- ПУНКТ 3: Set Hysteresis ---
-      if (selectedMenuItem == MENU_ITEM_SET_HYST) {
-      tft->setTextColor(COLOR_YELLOW);
-  } 
-      else {
-      tft->setTextColor(COLOR_WHITE);
-  }
-      tft->setCursor(20, 70);
-      tft->print("Set Hysteresis: ... ");
-      tft->setTextColor(COLOR_WHITE);
-      tft->print("00");
+  tft->setTextSize(1);
 
-      // --- ПУНКТ 4: Set Frosting ---
-      if (selectedMenuItem == MENU_ITEM_SET_FROST) {
-      tft->setTextColor(COLOR_YELLOW);
-  } 
-      else {
-      tft->setTextColor(COLOR_WHITE);
+  // Отрисовываем все пункты меню, выделяя текущий
+  for (byte i = MENU_ITEM_SET_TIME; i <= MENU_ITEM_EXIT; i++) {
+    updateSetPageItem(i, (i == selectedMenuItem));
   }
-      tft->setCursor(20, 85);
-      tft->print("Set Frosting: ..... ");
-      tft->setTextColor(COLOR_WHITE);
-      tft->print("00");
-
-      // --- ПУНКТ 5: Set Timer ---
-      if (selectedMenuItem == MENU_ITEM_SET_TIMER) {
-      tft->setTextColor(COLOR_YELLOW);
-  } 
-      else {
-      tft->setTextColor(COLOR_WHITE);
-  }
-      tft->setCursor(20, 100);
-      tft->print("Set Timer:");
-
-      // --- ПУНКТ 6: EXIT ---
-      if (selectedMenuItem == MENU_ITEM_EXIT) {
-      tft->setTextColor(COLOR_YELLOW);
-  } 
-      else {
-      tft->setTextColor(COLOR_WHITE);
-  }
-      tft->setCursor(20, 115);
-      tft->print("EXIT");
 }
+
 
 //Рисуем страницу для установки таймеров
 void drawTimerpage() {
-     tft->fillScreen(COLOR_BACKGROUND);
-     tft->setTextColor(COLOR_WHITE); 
-     tft->setTextSize(2);
+  tft->fillScreen(COLOR_BACKGROUND);
+  tft->setTextColor(COLOR_WHITE);
+  tft->setTextSize(2);
 
-     // --- ЗАГОЛОВОК СТРАНИЦЫ ---
-     tft->setCursor(85, 10); 
-     tft->print("TIMER SETTINGS");
-     tft->setTextSize(1);
-     
-     // --- ТАЙМЕР 1 ---
-     if (selectedTimerItem == MENU_ITEM_TIMER_1) {
-      tft->setTextColor(COLOR_YELLOW);
-  } 
-      else {
-      tft->setTextColor(COLOR_WHITE);
+  // Заголовок страницы
+  tft->setCursor(85, 10);
+  tft->print("TIMER SETTINGS");
+  tft->setTextSize(1);
+
+  // Отрисовываем все пункты меню таймеров, выделяя текущий
+  for (byte i = MENU_ITEM_TIMER_1; i <= MENU_ITEM_EXIT_TIMER; i++) {
+    updateTimerPageItem(i, (i == selectedTimerItem));
   }
-     tft->setCursor(30, 55);
-     tft->print("Timer 1");
-
-     // Меню таймера
-     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
-     tft->setCursor(15, 70);
-     tft->print("Timer ON: .... ");
-     tft->setTextColor(COLOR_WHITE); //при установке часов  меняем цвет на жёлтый
-     tft->print("00"); // Установка часов включения после подтверждения заносим в EPROM 
-     tft->setTextColor(COLOR_WHITE);// Цвет для ":"
-     tft->print(":");
-     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
-     tft->print("00"); // установка минут для включения после подтверждения заносим в EPROM 
-
-     // Отключение по таймеру
-     tft->setCursor(15, 85);
-     tft->print("Timer OFF: ... ");
-     tft->setTextColor(COLOR_WHITE); //при установке часов  меняем цвет на жёлтый
-     tft->print("00"); // Установка часов включения после подтверждения заносим в EPROM 
-     tft->setTextColor(COLOR_WHITE);// Цвет для ":"
-     tft->print(":");
-     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
-     tft->print("00"); // установка минут для включения после подтверждения заносим в EPROM 
-
-     // запись в EPROM/ удаление из EPROM 
-     tft->setCursor(15, 100);
-     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
-     tft->print("Timer Memory/Clear");
-
-     // --- ТАЙМЕР 2 ---
-     if (selectedTimerItem == MENU_ITEM_TIMER_2) {
-      tft->setTextColor(COLOR_YELLOW);
-  } 
-      else {
-      tft->setTextColor(COLOR_WHITE);
-  }
-     tft->setCursor(30, 130);
-     tft->print("Timer 2");
-
-     // Меню таймера
-     tft->setCursor(15, 145);
-     tft->setTextColor(COLOR_WHITE); //при установке часов  меняем цвет на жёлтый
-     tft->print("Timer ON: .... ");
-     tft->print("00"); // Установка часов включения после подтверждения заносим в EPROM 
-     tft->setTextColor(COLOR_WHITE);// Цвет для ":"
-     tft->print(":");
-     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
-     tft->print("00"); // установка минут для включения после подтверждения заносим в EPROM 
-
-     // Отключение по таймеру
-     tft->setCursor(15, 160);
-     tft->print("Timer OFF: ... ");
-     tft->setTextColor(COLOR_WHITE); //при установке часов  меняем цвет на жёлтый
-     tft->print("00"); // Установка часов включения после подтверждения заносим в EPROM 
-     tft->setTextColor(COLOR_WHITE);// Цвет для ":"
-     tft->print(":");
-     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
-     tft->print("00"); // установка минут для включения после подтверждения заносим в EPROM 
-
-     // запись в EPROM/ удаление из EPROM 
-     tft->setCursor(15, 175);
-     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
-     tft->print("Timer Memory/Clear");
-
-     // --- ТАЙМЕР 3 ---
-     if (selectedTimerItem == MENU_ITEM_TIMER_3) {
-      tft->setTextColor(COLOR_YELLOW);
-  } 
-      else {
-      tft->setTextColor(COLOR_WHITE);
-  }
-     tft->setCursor(190, 55);
-     tft->print("Timer 3");
-
-     // Меню таймера
-     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
-     tft->setCursor(175, 70);
-     tft->print("Timer ON: .... ");
-     tft->setTextColor(COLOR_WHITE); //при установке часов  меняем цвет на жёлтый
-     tft->print("00"); // Установка часов включения после подтверждения заносим в EPROM 
-     tft->setTextColor(COLOR_WHITE);// Цвет для ":"
-     tft->print(":");
-     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
-     tft->print("00"); // установка минут для включения после подтверждения заносим в EPROM 
-
-     // Отключение по таймеру
-     tft->setCursor(175, 85);
-     tft->print("Timer OFF: ... ");
-     tft->setTextColor(COLOR_WHITE); //при установке часов  меняем цвет на жёлтый
-     tft->print("00"); // Установка часов включения после подтверждения заносим в EPROM 
-     tft->setTextColor(COLOR_WHITE);// Цвет для ":"
-     tft->print(":");
-     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
-     tft->print("00"); // установка минут для включения после подтверждения заносим в EPROM 
-
-     // запись в EPROM/ удаление из EPROM 
-     tft->setCursor(175, 100);
-     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
-     tft->print("Timer Memory/Clear");
-
-     // --- ПУНКТ 4: TIMER 4 ---
-      if (selectedTimerItem == MENU_ITEM_TIMER_4) {
-      tft->setTextColor(COLOR_YELLOW);
-  } 
-      else {
-      tft->setTextColor(COLOR_WHITE);
-  }
-     tft->setCursor(190, 130);
-     tft->print("Timer 4");
-      
-     // Меню таймера
-     tft->setCursor(175, 145);
-     tft->setTextColor(COLOR_WHITE); //при установке часов  меняем цвет на жёлтый
-     tft->print("Timer ON: .... ");
-     tft->print("00"); // Установка часов включения после подтверждения заносим в EPROM 
-     tft->setTextColor(COLOR_WHITE);// Цвет для ":"
-     tft->print(":");
-     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
-     tft->print("00"); // установка минут для включения после подтверждения заносим в EPROM 
-
-     // Отключение по таймеру
-     tft->setCursor(175, 160);
-     tft->print("Timer OFF: ... ");
-     tft->setTextColor(COLOR_WHITE); //при установке часов  меняем цвет на жёлтый
-     tft->print("00"); // Установка часов включения после подтверждения заносим в EPROM 
-     tft->setTextColor(COLOR_WHITE);// Цвет для ":"
-     tft->print(":");
-     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
-     tft->print("00"); // установка минут для включения после подтверждения заносим в EPROM 
-
-     // запись в EPROM/ удаление из EPROM 
-     tft->setCursor(175, 175);
-     tft->setTextColor(COLOR_WHITE); //при наведении на пункт меню надпись меняем на жёлтую 
-     tft->print("Timer Memory/Clear");
-
-     // --- ПУНКТ 5: EXIT ---
-      if (selectedTimerItem == MENU_ITEM_EXIT_TIMER) {
-      tft->setTextColor(COLOR_YELLOW);
-  } 
-      else {
-      tft->setTextColor(COLOR_WHITE);
-  }
-      tft->setCursor(148, 200);
-      tft->print("EXIT");
 }
-    
