@@ -419,7 +419,7 @@ void updateSetPageItem(byte itemIndex, bool isSelected) {
       tft->print("Set Hysteresis: ... ");
       break;
     case MENU_ITEM_SET_FROST:
-      tft->print("Set Frosting: ..... 00");
+      tft->print("Set Frosting: ..... ");
       break;
     case MENU_ITEM_SET_TIMER:
       tft->print("Set Timer:");
