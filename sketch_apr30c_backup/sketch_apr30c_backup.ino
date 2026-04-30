@@ -410,13 +410,13 @@ void updateSetPageItem(byte itemIndex, bool isSelected) {
   tft->setTextColor(COLOR_BACKGROUND);
   switch (itemIndex) {
     case MENU_ITEM_SET_TIME:
-      tft->print("Set Time: ......... 00:00");
+      tft->print("Set Time: ......... ");
       break;
     case MENU_ITEM_SET_TEMP:
-      tft->print("Set Temperature: .. 000");
+      tft->print("Set Temperature: .. ");
       break;
     case MENU_ITEM_SET_HYST:
-      tft->print("Set Hysteresis: ... 00");
+      tft->print("Set Hysteresis: ... ");
       break;
     case MENU_ITEM_SET_FROST:
       tft->print("Set Frosting: ..... 00");
