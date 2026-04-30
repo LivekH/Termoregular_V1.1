@@ -438,16 +438,26 @@ void updateSetPageItem(byte itemIndex, bool isSelected) {
   tft->setCursor(x, y); // Обязательно повторно устанавливаем курсор!
   switch (itemIndex) {
     case MENU_ITEM_SET_TIME:
-      tft->print("Set Time: ......... 00:00");
+      tft->print("Set Time: ......... ");
+      tft->setTextColor(COLOR_WHITE);
+      tft->print("00");
+      tft->print(":");
+      tft->print("00");
       break;
     case MENU_ITEM_SET_TEMP:
-      tft->print("Set Temperature: .. 000");
+      tft->print("Set Temperature: .. ");
+      tft->setTextColor(COLOR_WHITE);
+      tft->print("000");
       break;
     case MENU_ITEM_SET_HYST:
-      tft->print("Set Hysteresis: ... 00");
+      tft->print("Set Hysteresis: ... ");
+      tft->setTextColor(COLOR_WHITE);
+      tft->print("00");
       break;
     case MENU_ITEM_SET_FROST:
-      tft->print("Set Frosting: ..... 00");
+      tft->print("Set Frosting: ..... ");
+      tft->setTextColor(COLOR_WHITE);
+      tft->print("00");
       break;
     case MENU_ITEM_SET_TIMER:
       tft->print("Set Timer:");
