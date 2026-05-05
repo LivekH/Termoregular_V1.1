@@ -1,0 +1,22 @@
+было:
+#else // default pins for Arduino Nano, Mini, Micro and more
+#define DF_GFX_SCK 13
+#define DF_GFX_MOSI 11
+#define DF_GFX_MISO 12
+#define DF_GFX_CS 9
+#define DF_GFX_DC 8
+#define DF_GFX_RST 7
+#define DF_GFX_BL 6
+#endif
+
+СТАЛО! для дальнейшего использования с Arduino Nano, Mini, Micro and more
+поменять значения обратно>
+#else // default pins for Arduino Nano, Mini, Micro and more
+#define DF_GFX_SCK 52 // Arduino Nano, Mini, Micro and more #define DF_GFX_SCK 13
+#define DF_GFX_MOSI 51 // Arduino Nano, Mini, Micro and more #define DF_GFX_MOSI 11
+#define DF_GFX_MISO 50 // Arduino Nano, Mini, Micro and more #define DF_GFX_MISO 12
+#define DF_GFX_CS 53 // Arduino Nano, Mini, Micro and more #define DF_GFX_CS 9
+#define DF_GFX_DC 48 // Arduino Nano, Mini, Micro and more #define DF_GFX_DC 8
+#define DF_GFX_RST 49 // Arduino Nano, Mini, Micro and more #define DF_GFX_RST 7
+//#define DF_GFX_BL 6 // раскоментировать для Arduino Nano, Mini, Micro and more
+#endif

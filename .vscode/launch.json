@@ -8,13 +8,14 @@
 {
     "version": "0.2.0",
     "configurations": [
+        
         {
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug",
-            "executable": "g:/V1/Termoregular_V1.1/.pio/build/nanoatmega328/firmware.elf",
-            "projectEnvName": "nanoatmega328",
-            "toolchainBinDir": "C:/Users/itach/.platformio/packages/toolchain-atmelavr/bin",
+            "executable": "c:/Users/livek/Desktop/Termoregular_V1.1/.pio/build/megaatmega2560/firmware.elf",
+            "projectEnvName": "megaatmega2560",
+            "toolchainBinDir": "C:/Users/livek/.platformio/packages/toolchain-atmelavr/bin",
             "internalConsoleOptions": "openOnSessionStart",
             "preLaunchTask": {
                 "type": "PlatformIO",
@@ -25,18 +26,18 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (skip Pre-Debug)",
-            "executable": "g:/V1/Termoregular_V1.1/.pio/build/nanoatmega328/firmware.elf",
-            "projectEnvName": "nanoatmega328",
-            "toolchainBinDir": "C:/Users/itach/.platformio/packages/toolchain-atmelavr/bin",
+            "executable": "c:/Users/livek/Desktop/Termoregular_V1.1/.pio/build/megaatmega2560/firmware.elf",
+            "projectEnvName": "megaatmega2560",
+            "toolchainBinDir": "C:/Users/livek/.platformio/packages/toolchain-atmelavr/bin",
             "internalConsoleOptions": "openOnSessionStart"
         },
         {
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (without uploading)",
-            "executable": "g:/V1/Termoregular_V1.1/.pio/build/nanoatmega328/firmware.elf",
-            "projectEnvName": "nanoatmega328",
-            "toolchainBinDir": "C:/Users/itach/.platformio/packages/toolchain-atmelavr/bin",
+            "executable": "c:/Users/livek/Desktop/Termoregular_V1.1/.pio/build/megaatmega2560/firmware.elf",
+            "projectEnvName": "megaatmega2560",
+            "toolchainBinDir": "C:/Users/livek/.platformio/packages/toolchain-atmelavr/bin",
             "internalConsoleOptions": "openOnSessionStart",
             "loadMode": "manual"
         }

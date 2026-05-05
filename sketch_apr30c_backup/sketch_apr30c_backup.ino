@@ -82,8 +82,12 @@ Encoder enc1(CLK, DT, SW); // Создаем объект энкодера
       String activeMode = "AUTO"; 
 
       // Значения температуры по умолчанию
-      float targetTemperature = 0; 
+      int targetTemperature = 0; 
       int hysteresis = 2; // Гистерезис по умолчанию
+
+      //int Temperature = shtSensor.readTemperature();
+      //int Humidity = shtSensor.readHumidity();
+
 
       // --- 6. ЗАДАЕМ ЗНАЧЕНИЯ ПО УМОЛЧАНИЮ (ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ) ---
       // --- ЗНАЧЕНИЯ ТАЙМЕРОВ ПО УМОЛЧАНИЮ ---
@@ -138,7 +142,7 @@ void setup() {
       
       // Инициализируем датчики и часы
       shtSensor.begin();
-  
+      rtc.begin();
 
       // Инициализируем пины
       pinMode(RELAY_PIN, OUTPUT);
@@ -242,6 +246,8 @@ void setup() {
 //-------Логика работы перехода по страницам--------
 
 void loop() {
+  
+      
   // --- ОБЯЗАТЕЛЬНЫЙ ОПРОС ЭНКОДЕРА ---
   enc1.tick();
 
@@ -633,11 +639,16 @@ void drawBackground() {
 
 // Рисуем динамические части интерфейса, стрелки digital indicator,clock, меню выбора работы   
 void drawDinamointerface() {
+  DateTime now = rtc.now();
+  int Temperature = shtSensor.readTemperature();
+  int Humidity = shtSensor.readHumidity();
 
       // временно размещаем индикацию часов для определения координат!!!! 
       tft->setCursor(15, 50); 
       // Выводим надпись <00:00> для времени
-      tft->print("00:00");
+      tft->print(now.hour());
+      tft->print(":");
+      tft->print(now.minute());
       
       // ---  СТРЕЛКИ ТЕМПЕРАТУРЫ ---
       // Линия из центра (TEMP_CENTER_X, TEMP_CENTER_Y)
@@ -653,13 +664,13 @@ void drawDinamointerface() {
       tft->setTextColor(COLOR_WHITE);
       tft->setTextSize(2);    // Размер 2 для подписей
       tft->setCursor(40, 173);// координаты установки х=40, у=173
-      tft->print("000");
+      tft->print(Humidity);
       
       //координаты цифровых индикаторов температуры
       tft->setTextColor(COLOR_WHITE);
       tft->setTextSize(2);     // Размер 2 для подписей
       tft->setCursor(185, 173);// координаты установки х=185, у=173
-      tft->print("000");
+      tft->print(Temperature);
        
       //координаты установки иконки нагрева.
       tft->fillCircle(144, 179, 16, COLOR_DARKGREY);
