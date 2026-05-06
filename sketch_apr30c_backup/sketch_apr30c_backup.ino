@@ -85,9 +85,7 @@ Encoder enc1(CLK, DT, SW); // Создаем объект энкодера
       int targetTemperature = 0; 
       int hysteresis = 2; // Гистерезис по умолчанию
 
-      //int Temperature = shtSensor.readTemperature();
-      //int Humidity = shtSensor.readHumidity();
-
+     
 
       // --- 6. ЗАДАЕМ ЗНАЧЕНИЯ ПО УМОЛЧАНИЮ (ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ) ---
       // --- ЗНАЧЕНИЯ ТАЙМЕРОВ ПО УМОЛЧАНИЮ ---
@@ -127,7 +125,14 @@ Encoder enc1(CLK, DT, SW); // Создаем объект энкодера
       // Используем BYTE для экономии памяти, как ты и предложил.
       byte selectedMenuItem = MENU_ITEM_SET_TIME; // Текущий выбранный пункт в SET_PAGE
       byte selectedTimerItem = MENU_ITEM_TIMER_1; // Текущий выбранный пункт в SET_TIMER
-
+      
+      // Переменные для часов 
+      int lastHour = -1;   // Используем -1 для инициализации
+      int lastMinute = -1;
+      
+      // Переменные для температуры и влажности
+      int lastTemperature = -1;
+      int lastHumidity = -1;
       
 //Блок 2 установки
 void setup() {
@@ -200,7 +205,9 @@ void setup() {
       //if (rtc.now < 10) tft->print("0");
       tft->print(now.hour());
       tft->print(":");
-      //if (rtc.minute < 10) tft->print("0");
+      if (now.minute() < 10) {
+      tft->print("0");
+    }
       tft->print(now.minute());
   
   delay(1000);
@@ -546,7 +553,7 @@ void drawBackground() {
       tft->setTextSize(2); 
       // --- ПОЗИЦИОНИРОВАНИЕ И ВЫВОД НАДПИСИ ---
       // Устанавливаем курсор в координаты x=54, y=3 
-      tft->setCursor(54, 3); 
+      tft->setCursor(54, 1); 
       // Выводим надпись <Sauna Burovichok>
       tft->print("<Sauna Burovichok>");
       // Устанавливаем курсор для вывода надписи время в координаты x=10, y=20
@@ -556,7 +563,7 @@ void drawBackground() {
       
       // --- Отрисовка шкалы влажности
       // --- ОТРИСОВКА СЕРОЙ ОКАНТОВКИ ---
-      // Углы для влажности: от 180° до 360°
+      // Углы для влажности: от 180° до 270°
       tft->fillArc(HUM_CENTER_X, HUM_CENTER_Y, 88, 76, 180, 270, COLOR_GRAY);
 
       // --- РАСЧЕТ УГЛОВ ДЛЯ ВЛАЖНОСТИ (22,5 градусов на сектор) ---
@@ -639,39 +646,153 @@ void drawBackground() {
 
 // Рисуем динамические части интерфейса, стрелки digital indicator,clock, меню выбора работы   
 void drawDinamointerface() {
-  DateTime now = rtc.now();
-  int Temperature = shtSensor.readTemperature();
-  int Humidity = shtSensor.readHumidity();
+  
+      DateTime now = rtc.now(); // Запускаем RTC
+      int currentHour = now.hour();
+      int currentMinute = now.minute();
+      tft->setTextColor(COLOR_WHITE);
+      tft->setCursor(15, 50);
+      if (currentHour < 10) {
+      tft->print("0");
+    }
+      tft->print(currentHour);
+  
+      // --- ВЫВОД ВРЕМЕНИ  ---
 
-      // временно размещаем индикацию часов для определения координат!!!! 
-      tft->setCursor(15, 50); 
-      // Выводим надпись <00:00> для времени
-      tft->print(now.hour());
-      tft->print(":");
-      tft->print(now.minute());
-      
+     // --- ЛОГИКА ДЛЯ ЧАСОВ (ПЕРВАЯ) ---
+     // Проверяем: ЧАСЫ ИЗМЕНИЛИСЬ?
+      if (currentHour != lastHour) {
+     //  СТИРАЕМ СТАРЫЕ ЧАСЫ
+      tft->setTextColor(COLOR_BACKGROUND);
+      tft->setCursor(15, 50); // Координаты часов
+      if (lastHour < 10) {
+      tft->print("0"); // Стираем ведущий ноль, если он был
+    }
+      tft->print(lastHour);
+
+     //  ПЕЧАТАЕМ НОВЫЕ ЧАСЫ
+      tft->setTextColor(COLOR_WHITE);
+      tft->setCursor(15, 50);
+      if (currentHour < 10) {
+      tft->print("0");
+    }
+      tft->print(currentHour);
+    
+    // Сохраняем новое значение часов
+      lastHour = currentHour;
+  }
+ 
+    // --- ВЫВОД ДВОЕТОЧИЯ ---
+    // Двоеточие просто рисуем всегда на своем месте
+    tft->setTextColor(COLOR_WHITE);
+    tft->setCursor(38, 50); // Координаты двоеточия (между часами и минутами)
+    tft->print(":");
+
+    // --- ЛОГИКА ДЛЯ МИНУТ (ВТОРАЯ) ---
+    tft->setTextColor(COLOR_WHITE);
+    tft->setCursor(50, 50);
+    if (currentMinute < 10) {
+        tft->print("0");
+    }
+    tft->print(currentMinute);
+         
+    // Проверяем: МИНУТЫ ИЗМЕНИЛИСЬ?
+    if (currentMinute != lastMinute) {
+    // 1. СТИРАЕМ СТАРЫЕ МИНУТЫ
+    tft->setTextColor(COLOR_BACKGROUND);
+    tft->setCursor(50, 50); // Координаты минут
+    if (lastMinute < 10) {
+        tft->print("0"); // Стираем ведущий ноль, если он был
+    }
+    tft->print(lastMinute);
+
+    //  ПЕЧАТАЕМ НОВЫЕ МИНУТЫ
+    tft->setTextColor(COLOR_WHITE);
+    tft->setCursor(50, 50);
+    if (currentMinute < 10) {
+        tft->print("0");
+    }
+    tft->print(currentMinute);
+    
+    // Сохраняем новое значение минут
+    lastMinute = currentMinute;
+  }
+ 
+       
       // ---  СТРЕЛКИ ТЕМПЕРАТУРЫ ---
       // Линия из центра (TEMP_CENTER_X, TEMP_CENTER_Y)
       // в точку (TEMP_CENTER_X - длина, TEMP_CENTER_Y)
-      tft->drawLine(TEMP_CENTER_X, TEMP_CENTER_Y, TEMP_CENTER_X - TEMP_NEEDLE_LENGTH, TEMP_CENTER_Y, COLOR_YELLOW);
+      //tft->drawLine(TEMP_CENTER_X, TEMP_CENTER_Y, TEMP_CENTER_X - TEMP_NEEDLE_LENGTH, TEMP_CENTER_Y, COLOR_YELLOW);
       
       // ---  СТРЕЛКИ ВЛАЖНОСТИ ---
       // Линия из центра (HUM_CENTER_X, HUM_CENTER_Y)
       // в точку (HUM_CENTER_X - длина, HUM_CENTER_Y)
       tft->drawLine(HUM_CENTER_X, HUM_CENTER_Y, HUM_CENTER_X - HUM_NEEDLE_LENGTH, HUM_CENTER_Y, COLOR_YELLOW);
       
-      //координаты цифровых индикаторов влажности
+        // --- ВЛАЖНОСТЬ ---
+       int currentHumidity = shtSensor.readHumidity(); // устанавливаем отображение влажности целым числом
+       tft->setTextColor(COLOR_WHITE);
+       tft->setCursor(40, 173);
+       tft->print(currentHumidity);
+       
+       if (currentHumidity != lastHumidity) {
+       // СЧИТЫВАЕМ СВЕЖИЕ ДАННЫЕ ТОЛЬКО ЕСЛИ НУЖНО ОБНОВЛЕНИЕ! 
+       
+         // Координаты цифровых индикаторов влажности
+      if (currentHumidity != lastHumidity) {
+        //  СТИРАЕМ СТАРЫЙ ЦИФРОВОЙ указатель влажности
+      tft->setTextColor(COLOR_BACKGROUND);
+      tft->setCursor(40, 173); // Координаты цифрового указателя влажности
+      tft->print(lastHumidity);
+         //  ПЕЧАТАЕМ НОВЫЙ ЦИФРОВОЙ указатель влажности
       tft->setTextColor(COLOR_WHITE);
-      tft->setTextSize(2);    // Размер 2 для подписей
-      tft->setCursor(40, 173);// координаты установки х=40, у=173
-      tft->print(Humidity);
+      tft->setCursor(40, 173);
+      tft->print(currentHumidity);
+        // Сохраняем новое значение влажности
+      lastHumidity = currentHumidity;
+      } 
+    }
+      
+      // --- ТЕМПЕРАТУРА ---
+      int currentTemperature = shtSensor.readTemperature(); // Устанавливаем отображение температурыцелым числом
+      tft->setTextColor(COLOR_WHITE);
+      tft->setCursor(185, 173);
+      tft->print(currentTemperature);
+      
+      // СЧИТЫВАЕМ СВЕЖИЕ ДАННЫЕ ТОЛЬКО ЕСЛИ НУЖНО ОБНОВЛЕНИЕ!
       
       //координаты цифровых индикаторов температуры
+      if (currentTemperature != lastTemperature) {
+        //  СТИРАЕМ СТАРЫЙ ЦИФРОВОЙ указатель температуры
+      tft->setTextColor(COLOR_BACKGROUND);
+      tft->setCursor(185, 173); // Координаты цифрового указателя температуры
+      tft->print(lastTemperature);
+         //  ПЕЧАТАЕМ НОВЫЙ ЦИФРОВОЙ указатель температуры
       tft->setTextColor(COLOR_WHITE);
-      tft->setTextSize(2);     // Размер 2 для подписей
-      tft->setCursor(185, 173);// координаты установки х=185, у=173
-      tft->print(Temperature);
+      tft->setCursor(185, 173);
+      tft->print(currentTemperature);
+
+      // --- Рисуем стрелку температуры ---
+      // СТИРАЕМ СТАРУЮ СТРЕЛКУ
+      // Используем lastTemperature для расчета угла
+      float oldAngle = (lastTemperature * 1.5) + 270;
+      int16_t oldXEnd = TEMP_CENTER_X + (int16_t)(sin(oldAngle * (PI / 180.0)) * TEMP_NEEDLE_LENGTH);
+      int16_t oldYEnd = TEMP_CENTER_Y - (int16_t)(cos(oldAngle * (PI / 180.0)) * TEMP_NEEDLE_LENGTH);
+      tft->drawLine(TEMP_CENTER_X, TEMP_CENTER_Y, oldXEnd, oldYEnd, COLOR_BACKGROUND);
+
+
+      // РИСУЕМ НОВУЮ СТРЕЛКУ
+      // Используем currentTemperature для нового угла
+      float newAngle = (currentTemperature * 1.5) + 270;
+      int16_t newXEnd = TEMP_CENTER_X + (int16_t)(sin(newAngle * (PI / 180.0)) * TEMP_NEEDLE_LENGTH);
+      int16_t newYEnd = TEMP_CENTER_Y - (int16_t)(cos(newAngle * (PI / 180.0)) * TEMP_NEEDLE_LENGTH);
+      tft->drawLine(TEMP_CENTER_X, TEMP_CENTER_Y, newXEnd, newYEnd, COLOR_YELLOW);
        
+        // Сохраняем новое значение температуры
+        lastTemperature = currentTemperature;
+      }
+    
+   
       //координаты установки иконки нагрева.
       tft->fillCircle(144, 179, 16, COLOR_DARKGREY);
       tft->setTextSize(2);
@@ -693,7 +814,7 @@ void drawDinamointerface() {
         
       //Координаты надписи AUTO
       tft->setTextColor(COLOR_WHITE);
-      tft->setCursor(140, 210); 
+      tft->setCursor(138, 210); 
       tft->print("AUTO");
 
       //Координаты надписи OFF
@@ -701,6 +822,7 @@ void drawDinamointerface() {
       tft->setCursor(240, 210); 
       tft->print("OFF");
   } 
+
 
 // Рисуем страницу настроек
 void drawSetpage() {
