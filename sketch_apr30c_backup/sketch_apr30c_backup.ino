@@ -717,17 +717,11 @@ void drawDinamointerface() {
     // Сохраняем новое значение минут
     lastMinute = currentMinute;
   }
- 
-       
-      // ---  СТРЕЛКИ ТЕМПЕРАТУРЫ ---
-      // Линия из центра (TEMP_CENTER_X, TEMP_CENTER_Y)
-      // в точку (TEMP_CENTER_X - длина, TEMP_CENTER_Y)
-      //tft->drawLine(TEMP_CENTER_X, TEMP_CENTER_Y, TEMP_CENTER_X - TEMP_NEEDLE_LENGTH, TEMP_CENTER_Y, COLOR_YELLOW);
       
       // ---  СТРЕЛКИ ВЛАЖНОСТИ ---
       // Линия из центра (HUM_CENTER_X, HUM_CENTER_Y)
       // в точку (HUM_CENTER_X - длина, HUM_CENTER_Y)
-      tft->drawLine(HUM_CENTER_X, HUM_CENTER_Y, HUM_CENTER_X - HUM_NEEDLE_LENGTH, HUM_CENTER_Y, COLOR_YELLOW);
+      //tft->drawLine(HUM_CENTER_X, HUM_CENTER_Y, HUM_CENTER_X - HUM_NEEDLE_LENGTH, HUM_CENTER_Y, COLOR_YELLOW);
       
         // --- ВЛАЖНОСТЬ ---
        int currentHumidity = shtSensor.readHumidity(); // устанавливаем отображение влажности целым числом
@@ -748,8 +742,26 @@ void drawDinamointerface() {
       tft->setTextColor(COLOR_WHITE);
       tft->setCursor(40, 173);
       tft->print(currentHumidity);
-        // Сохраняем новое значение влажности
-      lastHumidity = currentHumidity;
+
+      // РИСУЕМ НОВУЮ СТРЕЛКУ ВЛАЖНОСТИ
+      // Линия из центра (HUM_CENTER_X, HUM_CENTER_Y)
+      // в точку (HUM_CENTER_X - длина, HUM_CENTER_Y) 
+      // СТИРАЕМ СТАРУЮ СТРЕЛКУ ВЛАЖНОСТИ
+      // Используем lastHumidity для расчета угла
+      float oldAngleHum = (lastHumidity * 0.9) + 270;
+      int16_t oldXEndHum = HUM_CENTER_X + (int16_t)(sin(oldAngleHum * (PI / 180.0)) * HUM_NEEDLE_LENGTH);
+      int16_t oldYEndHum = HUM_CENTER_Y - (int16_t)(cos(oldAngleHum * (PI / 180.0)) * HUM_NEEDLE_LENGTH);
+      tft->drawLine(HUM_CENTER_X, HUM_CENTER_Y, oldXEndHum, oldYEndHum, COLOR_BACKGROUND);
+
+      // 2. РИСУЕМ НОВУЮ СТРЕЛКУ ВЛАЖНОСТИ
+      // Используем currentHumidity для нового угла
+      float newAngleHum = (currentHumidity * 0.9) + 270;
+      int16_t newXEndHum = HUM_CENTER_X + (int16_t)(sin(newAngleHum * (PI / 180.0)) * HUM_NEEDLE_LENGTH);
+      int16_t newYEndHum = HUM_CENTER_Y - (int16_t)(cos(newAngleHum * (PI / 180.0)) * HUM_NEEDLE_LENGTH);
+      tft->drawLine(HUM_CENTER_X, HUM_CENTER_Y, newXEndHum, newYEndHum, COLOR_YELLOW);
+    
+        // Сохраняем новое значение влажности 
+        lastHumidity = currentHumidity;
       } 
     }
       
@@ -772,14 +784,16 @@ void drawDinamointerface() {
       tft->setCursor(185, 173);
       tft->print(currentTemperature);
 
-      // --- Рисуем стрелку температуры ---
+      // РИСУЕМ СТРЕЛКУ ТЕМПЕРАТУРЫ
+      // Линия из центра (TEMP_CENTER_X, TEMP_CENTER_Y)
+      // в точку (TEMP_CENTER_X - длина, TEMP_CENTER_Y)
+      // Устанавливаем "прошлые" значения равными текущим
       // СТИРАЕМ СТАРУЮ СТРЕЛКУ
       // Используем lastTemperature для расчета угла
       float oldAngle = (lastTemperature * 1.5) + 270;
       int16_t oldXEnd = TEMP_CENTER_X + (int16_t)(sin(oldAngle * (PI / 180.0)) * TEMP_NEEDLE_LENGTH);
       int16_t oldYEnd = TEMP_CENTER_Y - (int16_t)(cos(oldAngle * (PI / 180.0)) * TEMP_NEEDLE_LENGTH);
       tft->drawLine(TEMP_CENTER_X, TEMP_CENTER_Y, oldXEnd, oldYEnd, COLOR_BACKGROUND);
-
 
       // РИСУЕМ НОВУЮ СТРЕЛКУ
       // Используем currentTemperature для нового угла
@@ -788,9 +802,9 @@ void drawDinamointerface() {
       int16_t newYEnd = TEMP_CENTER_Y - (int16_t)(cos(newAngle * (PI / 180.0)) * TEMP_NEEDLE_LENGTH);
       tft->drawLine(TEMP_CENTER_X, TEMP_CENTER_Y, newXEnd, newYEnd, COLOR_YELLOW);
        
-        // Сохраняем новое значение температуры
-        lastTemperature = currentTemperature;
-      }
+      // Сохраняем новое значение температуры
+      lastTemperature = currentTemperature;
+    }
     
    
       //координаты установки иконки нагрева.
