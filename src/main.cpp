@@ -69,25 +69,37 @@ Encoder enc1(CLK, DT, SW); // Создаем объект энкодера
 #define MENU_ITEM_SET_TEMP 2
 #define MENU_ITEM_SET_HYST 3
 #define MENU_ITEM_SET_FROST 4
-#define MENU_ITEM_SET_TIMER 5
-#define MENU_ITEM_EXIT 6
+#define MENU_ITEM_SET_TIMER_1 5
+#define MENU_ITEM_SET_TIMER_2 6
+#define MENU_ITEM_SET_TIMER_3 7
+#define MENU_ITEM_SET_TIMER_4 8
+#define MENU_ITEM_EXIT 9
+//КОНСТАНТЫ ДЛЯ МЕНЮ SET_TIME
+#define TIME_HOURS 1
+#define TIME_MINUTES 2
+#define TIME_EXIT 3
+// --- КОНСТАНТЫ ДЛЯ РЕЖИМА НАСТРОЙКИ ВРЕМЕНИ ---
+#define NAVIGATING 0
+#define EDITING_HOURS 1
+#define EDITING_MINUTES 2
+// --- КОНСТАНТЫ ДЛЯ МЕНЮ УСТАНОВКИ ТЕМПЕРАТУРЫ ---
+#define SET_TEMP 0
+#define TEMP_EXIT 1
+// --- КОНСТАНТЫ ДЛЯ МЕНЮ НАВИГАЦИИ УСТАНОВКИ ТЕМПЕРАТУРЫ ---
+#define TEMP_NAVIGATING 0
+#define TEMP_EDITING 1
 
-#define MENU_ITEM_TIMER_1 1
-#define MENU_ITEM_TIMER_2 2
-#define MENU_ITEM_TIMER_3 3
-#define MENU_ITEM_TIMER_4 4
-#define MENU_ITEM_EXIT_TIMER 5
 
-      // Режим работы по умолчанию
-      String activeMode = "AUTO"; 
+//#define PAGE_SET_TIME_EDIT "SET_TIME_EDIT" //  КОНСТАНТА ДЛЯ СТРАНИЦЫ УСТАНОВКИ ВРЕМЕНИ ---
 
-      // Значения температуры по умолчанию
-      int targetTemperature = 0; 
-      int hysteresis = 2; // Гистерезис по умолчанию
+// Режим работы по умолчанию
+String activeMode = "AUTO";
 
-     
-
-      // --- 6. ЗАДАЕМ ЗНАЧЕНИЯ ПО УМОЛЧАНИЮ (ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ) ---
+// Значения температуры по умолчанию
+int targetTemp = 0; 
+int hysteresis = 2; // Гистерезис по умолчанию
+      
+// --- 6. ЗАДАЕМ ЗНАЧЕНИЯ ПО УМОЛЧАНИЮ (ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ) ---
       // --- ЗНАЧЕНИЯ ТАЙМЕРОВ ПО УМОЛЧАНИЮ ---
       // Используем тип 'byte', так как мы будем хранить значения от 0 до 9 (1 байт)
       byte timer1 = 0; // Таймер 1 по умолчанию выключен
@@ -95,45 +107,69 @@ Encoder enc1(CLK, DT, SW); // Создаем объект энкодера
       byte timer3 = 0; // Таймер 3 по умолчанию выключен
       byte timer4 = 0; // Таймер 4 по умолчанию выключен
 
+      // --- ОБЪЯВЛЕНИЕ ФУНКЦИЙ ---
+      void drawBackground();      // Страница отрисовки ыонового изображения
+      void drawDinamointerface(); // Страница отрисовки динамического интерфейса
+      void drawSetpage();         // Cтраница отрисовки меню Set Page
+      void drawSetTimepage();     // Cтраница отрисовки меню Set Time
+      void drawSetTemppage();     // Cтраница отрисовки меню Set Temp      
+      void updateSetPageItem(byte itemIndex, bool isSelected); // список пунктов меню Set Page
+      void updateSetTimeItem(byte itemIndex, bool isSelected); // список пунктов меню Set Time
+      void updateSetTempItem(byte itemIndex, bool isSelected); // список пунктов меню Set Temp
       
-      void drawBackground();
-      void drawDinamointerface();
-      void drawSetpage();
-      void drawTimerpage();
-      void updateSetPageItem(byte itemIndex, bool isSelected);
-      void updateTimerPageItem(byte itemIndex, bool isSelected);
-
       // ---  ПЕРЕМЕННЫЕ ДЛЯ ЛОГИКИ ---
-
+      // Переменная для хранения текущей страницы
+      String currentPage = "MAIN_PAGE"; // Начинаем на главной странице
       // Флаг для отрисовки фона (твоя идея)
       bool isStaticDrawn = false;
       // флаг для отрисовки страницы настройки
       bool isSetPageDrawn = false;
-      // Флаг для страницы таймеров 
-      bool isSetTimerDrawn = false;
-
-      // Переменная для хранения текущей страницы
-      String currentPage = "MAIN_PAGE"; // Начинаем на главной странице
-
+      // Флаг для отрисовки страницы установки времени
+      bool isSetTimePageDrawn = false;
+      // Флаг для отрисовки страницы установки температуры
+      bool isSetTempPageDrawn = false;
+      
       // Переменные для отслеживания бездействия пользователя
-      unsigned long inactivityTimer = 0; // Таймер для отслеживания последнего действия
-      const long inactivityTime = 10000; // Время бездействия в мс (10000 мс = 10 сек)
+      const unsigned long inactivityTime = 10000; // 10 секунд в миллисекундах
+      unsigned long mainInactivityTimer = 0; // 
+      unsigned long setInactivityTimer = 0; // 
+      unsigned long timeInactivityTimer = 0; //
+      unsigned long tempInactivityTimer = 0; 
 
       // Переменные для логики работы с меню
       bool isSelecting = false; // Флаг: находимся ли мы в режиме выбора пункта меню
 
       // Используем BYTE для экономии памяти, как ты и предложил.
       byte selectedMenuItem = MENU_ITEM_SET_TIME; // Текущий выбранный пункт в SET_PAGE
-      byte selectedTimerItem = MENU_ITEM_TIMER_1; // Текущий выбранный пункт в SET_TIMER
+      // Переменная для меню часов
+      byte selectedTimeItem = TIME_EXIT;
+      // Переменная для меню температуры
+      byte selectedTempItem = TEMP_EXIT;
+       // --- ПЕРЕМЕННАЯ СОСТОЯНИЯ ---
+      byte timeMenuState = NAVIGATING;      // Начинаем в режиме навигации времени
+      byte tempMenuState = TEMP_NAVIGATING; // Начинаем в режиме меню навигации температуры
       
-      // Переменные для часов 
-      int lastHour = -1;   // Используем -1 для инициализации
+
+
+
+           
+      // Новая переменная: хранит номер таймера, который мы настраиваем (1,2,3 или 4)
+      byte activeTimerNumber = 0;      
+      
+      // Для часов
+      int lastHour = -1;   // Используем -1 для инициализации (заставит отрисоваться при старте)
       int lastMinute = -1;
       
-      // Переменные для температуры и влажности
+      // Для температуры и влажности
       int lastTemperature = -1;
       int lastHumidity = -1;
       
+      // Для установки часов и минут
+      int targetHour = 0;
+      int targetMinute = 0;
+      
+
+
 //Блок 2 установки
 void setup() {
       // --- 1. ИНИЦИАЛИЗАЦИЯ ВСЕХ КОМПОНЕНТОВ ---
@@ -165,7 +201,7 @@ void setup() {
       // Читаем сохраненную температуру (по адресу 1)
       char savedTemp = EEPROM.read(1);
       if (savedTemp >= '0' && savedTemp <= '9') {
-          targetTemperature = savedTemp - '0'; // Преобразуем символ в число
+          targetTemp = savedTemp - '0'; // Преобразуем символ в число
   }
 
       // Читаем сохраненный гистерезис (по адресу 2)
@@ -220,7 +256,7 @@ void setup() {
   
       tft->setCursor(10, 80);
       tft->print("Set Temp (EEPROM): ");
-      tft->print(targetTemperature); // Значение из памяти
+      tft->print(targetTemp); // Значение из памяти
   
   delay(1000);
   
@@ -250,23 +286,25 @@ void setup() {
 }
 
 
-//-------Логика работы перехода по страницам--------
 
-void loop() {
-  
-      
+  void loop() {
   // --- ОБЯЗАТЕЛЬНЫЙ ОПРОС ЭНКОДЕРА ---
-  enc1.tick();
+  enc1.tick(); 
 
   // --- ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ (MAIN_PAGE) ---
   if (currentPage == "MAIN_PAGE") {
-      // --- ПРОВЕРКА УДЕРЖАНИЯ КНОПКИ (> 5 сек) ---
       if (enc1.isHolded()) {
           tft->fillScreen(COLOR_BACKGROUND);
+          selectedMenuItem = MENU_ITEM_SET_TIME; // КУРСОР НА ПЕРВЫЙ ПУНКТ
           currentPage = "SET_PAGE";
           isStaticDrawn = false;
           isSetPageDrawn = false;
-          inactivityTimer = millis();
+          isSetTimePageDrawn = false;
+          isSetTempPageDrawn = false;
+          mainInactivityTimer = millis(); // Сбрасываем таймер MAIN_PAGE
+          tempInactivityTimer = millis(); // Сбрасываем таймер для новой страницы
+          setInactivityTimer = millis(); // Сбрасываем таймер SET_PAGE при возврате
+          timeInactivityTimer = millis();
           return;
       }
 
@@ -282,145 +320,506 @@ void loop() {
       if (millis() - lastMainLoopTime < 50) return;
       lastMainLoopTime = millis();
   }
-  
+
   // --- ЛОГИКА СТРАНИЦЫ НАСТРОЕК (SET_PAGE) ---
+  
   else if (currentPage == "SET_PAGE") {
-      
-      // --- ОБРАБОТКА СОБЫТИЙ В САМОМ НАЧАЛЕ ---
-      // Это нужно, чтобы события не сбрасывались задержкой в конце.
-      
-      //  Проверка БЕЗДЕЙСТВИЯ (10 сек)
-      if (millis() - inactivityTimer > inactivityTime) {
-          tft->fillScreen(COLOR_BACKGROUND);
-          currentPage = "MAIN_PAGE";
-          isStaticDrawn = false; // Сбрасываем
-          isSetPageDrawn = false; // флаги
-          isSetTimerDrawn = false; // страниц
-          return;
-      }
-      
-      //  Проверка ВРАЩЕНИЯ ЭНКОДЕРА
-      byte prevItem = selectedMenuItem;
-
-if (enc1.isRight()) {
-  inactivityTimer = millis();
-  selectedMenuItem++;
-  if (selectedMenuItem > MENU_ITEM_EXIT) selectedMenuItem = MENU_ITEM_SET_TIME;
-  updateSetPageItem(prevItem, false);  // Ставим белый цвет для старого пункта
-  updateSetPageItem(selectedMenuItem, true); // Ставим жёлтый цвет для нового пункта
-}
-if (enc1.isLeft()) {
-  inactivityTimer = millis();
-  selectedMenuItem--;
-  if (selectedMenuItem < MENU_ITEM_SET_TIME) selectedMenuItem = MENU_ITEM_EXIT;
-  updateSetPageItem(prevItem, false);
-  updateSetPageItem(selectedMenuItem, true);
-}
-
-      // --- ОБЪЕДИНЕННАЯ ЛОГИКА КЛИКА ПО КНОПКЕ ---
-      if (enc1.isClick()) {
-          // Если курсор на "EXIT" - выходим на главную
-          if (selectedMenuItem == MENU_ITEM_EXIT) {
-              tft->fillScreen(COLOR_BACKGROUND);
-              currentPage = "MAIN_PAGE";
-              isStaticDrawn = false; // Сбрасываем
-              isSetPageDrawn = false; //флаги
-              isSetTimerDrawn = false; // страниц
-              return;
-          }
-          // Если курсор на "Set Timer" - переходим на страницу таймеров
-          else if (selectedMenuItem == MENU_ITEM_SET_TIMER) {
-              tft->fillScreen(COLOR_BACKGROUND);
-              currentPage = "SET_TIMER";
-              isStaticDrawn = false; // Сбрасываем
-              isSetPageDrawn = false; // флаги
-              isSetTimerDrawn = false; // страниц
-              inactivityTimer = millis();
-              return;
-          }
-      }
-      
-      
-      // --- ОТРИСОВКА СТРАНИЦЫ (ЕСЛИ НУЖНО) ---
-      // Отрисовка происходит только если мы не вышли из функции по 'return' выше.
-      if (!isSetPageDrawn) {
-          drawSetpage();
-          isSetPageDrawn = true; 
-          inactivityTimer = millis(); 
-      }
-
-      // --- ЗАДЕРЖКА В КОНЦЕ ---
-      // Теперь задержка не мешает обработке событий.
-      static unsigned long lastSetLoopTime = 0;
-      if (millis() - lastSetLoopTime < 50) return;
-      lastSetLoopTime = millis();
-  }
-
-  // --- ЛОГИКА СТРАНИЦЫ НАСТРОЕК (SET_TIMER) ---
-  else if (currentPage == "SET_TIMER") {
-      // ---  ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
-      if (millis() - inactivityTimer > inactivityTime) {
+      // --- ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
+      if (millis() - setInactivityTimer > inactivityTime) {
           tft->fillScreen(COLOR_BACKGROUND);
           currentPage = "MAIN_PAGE";
           isStaticDrawn = false;
           isSetPageDrawn = false;
-          isSetTimerDrawn = false; 
+          isSetTimePageDrawn = false;
+          isSetTempPageDrawn = false;
+          mainInactivityTimer = millis(); // Сбрасываем таймер MAIN_PAGE
+          tempInactivityTimer = millis(); // Сбрасываем таймер для новой страницы
+          setInactivityTimer = millis(); // Сбрасываем таймер SET_PAGE при возврате
+          timeInactivityTimer = millis();
           return;
       }
 
-      // --- ОТРИСОВКА СТРАНИЦЫ SET_TIMER ---
-      //  Проверка ВРАЩЕНИЯ ЭНКОДЕРА И КНОПКИ ЭНКОДЕРА
-      byte prevTimerItem = selectedTimerItem;
+      // --- ПРОВЕРКА ВРАЩЕНИЯ ЭНКОДЕРА ---
+      byte prevItem = selectedMenuItem;
+      if (enc1.isRight()) {
+          setInactivityTimer = millis();
+          selectedMenuItem++;
+          if (selectedMenuItem > MENU_ITEM_EXIT) selectedMenuItem = MENU_ITEM_SET_TIME;
+          updateSetPageItem(prevItem, false);
+          updateSetPageItem(selectedMenuItem, true);
+      }
+      if (enc1.isLeft()) {
+          setInactivityTimer = millis();
+          selectedMenuItem--;
+          if (selectedMenuItem < MENU_ITEM_SET_TIME) selectedMenuItem = MENU_ITEM_EXIT;
+          updateSetPageItem(prevItem, false);
+          updateSetPageItem(selectedMenuItem, true);
+      }
 
-if (enc1.isRight()) {
-  inactivityTimer = millis();
-  selectedTimerItem++;
-  if (selectedTimerItem > MENU_ITEM_EXIT_TIMER) selectedTimerItem = MENU_ITEM_TIMER_1;
-  updateTimerPageItem(prevTimerItem, false);
-  updateTimerPageItem(selectedTimerItem, true);
-}
-if (enc1.isLeft()) {
-  inactivityTimer = millis();
-  selectedTimerItem--;
-  if (selectedTimerItem < MENU_ITEM_TIMER_1) selectedTimerItem = MENU_ITEM_EXIT_TIMER;
-  updateTimerPageItem(prevTimerItem, false);
-  updateTimerPageItem(selectedTimerItem, true);
-}
-if (enc1.isClick()) {
-          // Если курсор на "EXIT" - выходим на главную
-          if (selectedTimerItem == MENU_ITEM_EXIT_TIMER) {
+      // --- ОБЪЕДИНЕННАЯ ЛОГИКА КЛИКА ПО КНОПКЕ ---
+      if (enc1.isClick()) {
+          setInactivityTimer = millis();
+
+          // --- ВЫХОД ПО ПУНКТУ "EXIT" ---
+           if (selectedMenuItem == MENU_ITEM_EXIT) {
               tft->fillScreen(COLOR_BACKGROUND);
               currentPage = "MAIN_PAGE";
-              isStaticDrawn = false; // Сбрасываем
-              isSetPageDrawn = false; //флаги
-              isSetTimerDrawn = false; // страниц
+              isStaticDrawn = false;
+              isSetPageDrawn = false;
+              isSetTimePageDrawn = false;
+              isSetTempPageDrawn = false;
+              mainInactivityTimer = millis(); // Сбрасываем таймер MAIN_PAGE
+              tempInactivityTimer = millis(); // Сбрасываем таймер для новой страницы
+              setInactivityTimer = millis(); // Сбрасываем таймер SET_PAGE при возврате
+              timeInactivityTimer = millis();
               return;
           }
-}
-      // --- ОТРИСОВКА СТРАНИЦЫ SET_TIMER ---
-          if (!isSetTimerDrawn) {
-          drawTimerpage(); 
-          isSetTimerDrawn = true; 
-          inactivityTimer = millis(); 
-          }
-      // --- ЗАДЕРЖКА В КОНЦЕ ---
-      static unsigned long lastSetTimerTime = 0;
-      if (millis() - lastSetTimerTime < 50) return;
-      lastSetTimerTime = millis();
+
+          // --- ПЕРЕХОД В ОКНО УСТАНОВКИ ВРЕМЕНИ ---
+          else if (selectedMenuItem == MENU_ITEM_SET_TIME) {
+              selectedTimeItem = TIME_EXIT; // Сбрасываем позицию курсора
+              tft->fillScreen(COLOR_BACKGROUND);
+              currentPage = "SET_TIME_PAGE";
+              isStaticDrawn = false;
+              isSetPageDrawn = false;
+              isSetTimePageDrawn = false;
+              isSetTempPageDrawn = false;
+              mainInactivityTimer = millis(); // Сбрасываем таймер MAIN_PAGE
+              tempInactivityTimer = millis(); // Сбрасываем таймер для новой страницы
+              setInactivityTimer = millis(); // Сбрасываем таймер SET_PAGE при возврате
+              timeInactivityTimer = millis();
+              return;
+           }
+           // --- ПЕРЕХОД В ОКНО УСТАНОВКИ ТЕМПЕРАТУРЫ ---
+          else if (selectedMenuItem == MENU_ITEM_SET_TEMP) {
+              // --- СБРОС КУРСОРА ПРИ ВХОДЕ НА СТРАНИЦУ ---
+              selectedTempItem = TEMP_EXIT; 
+              tft->fillScreen(COLOR_BACKGROUND);
+              currentPage = "SET_TEMP_PAGE";
+              isStaticDrawn = false;
+              isSetPageDrawn = false;
+              isSetTimePageDrawn = false;
+              isSetTempPageDrawn = false;
+              mainInactivityTimer = millis(); // Сбрасываем таймер MAIN_PAGE
+              tempInactivityTimer = millis(); // Сбрасываем таймер для новой страницы
+              setInactivityTimer = millis(); // Сбрасываем таймер SET_PAGE при возврате
+              timeInactivityTimer = millis();
+              
+              return;
+          }        
+        }
+              // --- ОТРИСОВКА СТРАНИЦЫ SET_PAGE ---
+              if (!isSetPageDrawn) {
+              drawSetpage();
+              isSetPageDrawn = true;
+      }
+
+      static unsigned long lastSetLoopTime = 0;
+      if (millis() - lastSetLoopTime < 50) return;
+      lastSetLoopTime = millis();
   }
- }
+  // --- ЛОГИКА СТРАНИЦЫ УСТАНОВКИ ВРЕМЕНИ (SET_TIME_PAGE) ---
+  else if (currentPage == "SET_TIME_PAGE") {
+      // --- ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
+      if (millis() - timeInactivityTimer > inactivityTime) {
+          tft->fillScreen(COLOR_BACKGROUND);
+          currentPage = "SET_PAGE";
+          isStaticDrawn = false;
+          isSetPageDrawn = false;
+          isSetTimePageDrawn = false;
+          mainInactivityTimer = millis(); // Сбрасываем таймер MAIN_PAGE
+          tempInactivityTimer = millis(); // Сбрасываем таймер для новой страницы
+          setInactivityTimer = millis(); // Сбрасываем таймер SET_PAGE при возврате
+          timeInactivityTimer = millis();
+          return;
+      }
+
+      // Получаем текущее время с RTC для отображения и сохранения
+      DateTime now = rtc.now();
+      int currentHour = now.hour();
+      int currentMinute = now.minute();
+
+      // При первом входе на страницу, загружаем текущее время в переменные для редактирования
+      if (!isSetTimePageDrawn) {
+          drawSetTimepage();     // ...тогда рисуем
+          isSetTimePageDrawn = true; // И ставим флаг, что она нарисована
+          targetHour = currentHour;
+          targetMinute = currentMinute;
+      }
+      // --- ЛОГИКА ВРАЩЕНИЯ ЭНКОДЕРА (НАВИГАЦИЯ) ---
+      // Эта часть работает только если мы НЕ в режиме редактирования
+      if (timeMenuState == NAVIGATING) {
+          byte prevTimeItem = selectedTimeItem; 
+
+          if (enc1.isRight()) {
+              timeInactivityTimer = millis();
+              selectedTimeItem++;
+              if (selectedTimeItem > TIME_EXIT) selectedTimeItem = TIME_HOURS;  
+              updateSetTimeItem(prevTimeItem, false);
+              updateSetTimeItem(selectedTimeItem, true);
+          }
+          if (enc1.isLeft()) {
+              timeInactivityTimer = millis();
+              selectedTimeItem--;
+              if (selectedTimeItem < TIME_HOURS) selectedTimeItem = TIME_EXIT; 
+              updateSetTimeItem(prevTimeItem, false);
+              updateSetTimeItem(selectedTimeItem, true);
+          }
+      }
+
+      // --- ЛОГИКА КЛИКА ПО КНОПКЕ (ВХОД/ВЫХОД ИЗ РЕДАКТИРОВАНИЯ) ---
+      if (enc1.isClick()) {
+          timeInactivityTimer = millis();
+
+          // --- ВЫХОД ПО ПУНКТУ "EXIT" ---
+          if (selectedTimeItem == TIME_EXIT) {
+              tft->fillScreen(COLOR_BACKGROUND);
+              currentPage = "SET_PAGE";
+              isStaticDrawn = false;
+              isSetPageDrawn = false;
+              isSetTimePageDrawn = false;
+              mainInactivityTimer = millis(); // Сбрасываем таймер MAIN_PAGE
+              tempInactivityTimer = millis(); // Сбрасываем таймер для новой страницы
+              setInactivityTimer = millis(); // Сбрасываем таймер SET_PAGE при возврате
+              timeInactivityTimer = millis();
+              return;
+          }
+
+           // --- ВХОД/ВЫХОД ИЗ РЕЖИМА РЕДАКТИРОВАНИЯ ---
+           // Проверяем клик на часы или минуты
+           if (selectedTimeItem == TIME_HOURS || selectedTimeItem == TIME_MINUTES) {
+           // Если мы УЖЕ находимся в режиме редактирования этого же пункта, значит это клик на "Сохранить"
+           if ((selectedTimeItem == TIME_HOURS && timeMenuState == EDITING_HOURS) || 
+           (selectedTimeItem == TIME_MINUTES && timeMenuState == EDITING_MINUTES)) {
+                   
+           // Выходим из режима редактирования
+           timeMenuState = NAVIGATING;
+                        
+           } else {
+           // Входим в режим редактирования выбранного пункта
+           timeMenuState = (selectedTimeItem == TIME_HOURS) ? EDITING_HOURS : EDITING_MINUTES;
+          }
+         }
+       }
+       // --- ЛОГИКА УСТАНОВКИ ЗНАЧЕНИЯ ПРИ ВРАЩЕНИИ В РЕЖИМЕ РЕДАКТИРОВАНИЯ ---
+      // Эта часть работает ТОЛЬКО если мы в режиме редактирования
+      // --- ЧИСТАЯ ЛОГИКА ВРАЩЕНИЯ (БЕЗ АНТИДРЕБЕЗГА) ---     
+      // --- БЛОК ДЛЯ ЧАСОВ ---
+      if (timeMenuState == EDITING_HOURS) {
+          // Если энкодер повернулся вправо
+          if (enc1.isRight()) {
+              timeInactivityTimer = millis();
+              targetHour++;
+              if (targetHour > 23) targetHour = 0;
+
+              // Сохраняем в RTC              
+              rtc.adjust(DateTime(now.year(), now.month(), now.day(), targetHour, targetMinute, 0));
+          }
+          // Если энкодер повернулся влево
+          if (enc1.isLeft()) {
+              timeInactivityTimer = millis();
+              targetHour--;
+              if (targetHour < 0) targetHour = 23;
+
+              // Сохраняем в RTC              
+              rtc.adjust(DateTime(now.year(), now.month(), now.day(), targetHour, targetMinute, 0));
+          }
+      }
+
+      // --- БЛОК ДЛЯ МИНУТ ---
+      if (timeMenuState == EDITING_MINUTES) {
+          if (enc1.isRight()) {
+              timeInactivityTimer = millis();
+              targetMinute++;
+              if (targetMinute > 59) targetMinute = 0;
+
+              // Сохраняем в RTC         
+              rtc.adjust(DateTime(now.year(), now.month(), now.day(), targetHour, targetMinute, 0));
+          }
+          if (enc1.isLeft()) {
+              timeInactivityTimer = millis();
+              targetMinute--;
+              if (targetMinute < 0) targetMinute = 59;
+
+              // Сохраняем в RTC
+              rtc.adjust(DateTime(now.year(), now.month(), now.day(), targetHour, targetMinute, 0));
+          }
+      }
+                     
+      // --- ОТРИСОВКА ВРЕМЕНИ НА ЭКРАНЕ ---
+      
+      // --- ЛОГИКА ДЛЯ ЧАСОВ ---
+      tft->setTextSize(4);
+      tft->setTextColor( (timeMenuState == EDITING_HOURS) ? COLOR_YELLOW : COLOR_WHITE );
+          tft->setCursor(102, 110);
+          if (currentHour < 10) tft->print("0");
+          tft->print(currentHour);
+      if (currentHour != targetHour) {
+          // 1. СТИРАЕМ СТАРЫЕ ЧАСЫ цветом фона
+          tft->setTextSize(4);
+          tft->setTextColor(COLOR_BACKGROUND);
+          tft->setCursor(102, 110);
+          if (targetHour < 10) tft->print("0");
+          tft->print(targetHour);
+          
+          // 2. РИСУЕМ НОВЫЕ ЧАСЫ. Цвет зависит от режима.
+          tft->setTextSize(4);
+          tft->setTextColor( (timeMenuState == EDITING_HOURS) ? COLOR_YELLOW : COLOR_WHITE );
+          tft->setCursor(102, 110);
+          if (currentHour < 10) tft->print("0");
+          tft->print(currentHour);
+          targetHour = currentHour; // Обновляем для следующего сравнения
+      }
+
+      // --- ЛОГИКА ДЛЯ МИНУТ ---
+      tft->setTextSize(4);
+      tft->setTextColor( (timeMenuState == EDITING_MINUTES) ? COLOR_YELLOW : COLOR_WHITE );
+          tft->setCursor(180, 110);
+          if (currentMinute < 10) tft->print("0");
+          tft->print(currentMinute);
+      if (currentMinute != targetMinute) {
+          // 1. СТИРАЕМ СТАРЫЕ МИНУТЫ
+          tft->setTextSize(4);
+          tft->setTextColor(COLOR_BACKGROUND);
+          tft->setCursor(180, 110);
+          if (targetMinute < 10) tft->print("0");
+          tft->print(targetMinute);
+          
+          // 2. РИСУЕМ НОВЫЕ МИНУТЫ. Цвет зависит от режима.
+          tft->setTextSize(4);
+          tft->setTextColor( (timeMenuState == EDITING_MINUTES) ? COLOR_YELLOW : COLOR_WHITE );
+          tft->setCursor(180, 110);
+          if (currentMinute < 10) tft->print("0");
+          tft->print(currentMinute);
+          targetMinute = currentMinute;
+      }
+          static unsigned long lastSetTimeLoopTime = 0;
+          if (millis() - lastSetTimeLoopTime < 50) return;
+          lastSetTimeLoopTime = millis();
+    }      
+
+    // --- ЛОГИКА СТРАНИЦЫ УСТАНОВКИ ТЕМПЕРАТУРЫ (SET_TEMP_PAGE) ---
+// --- ЛОГИКА СТРАНИЦЫ УСТАНОВКИ ТЕМПЕРАТУРЫ (SET_TEMP_PAGE) ---
+// --- ЛОГИКА СТРАНИЦЫ УСТАНОВКИ ТЕМПЕРАТУРЫ (SET_TEMP_PAGE) ---
+if (currentPage == "SET_TEMP_PAGE") {
+  // ИНИЦИАЛИЗАЦИЯ ТАЙМЕРА ПРИ ВХОДЕ НА СТРАНИЦУ
+  if (millis() - tempInactivityTimer > inactivityTime) {
+    tft->fillScreen(COLOR_BACKGROUND);
+    currentPage = "SET_PAGE";
+    isStaticDrawn = false;
+    isSetPageDrawn = false;
+    isSetTempPageDrawn = false;
+    isSetTimePageDrawn = false;
+    mainInactivityTimer = millis();
+    tempInactivityTimer = millis();
+    setInactivityTimer = millis();
+    timeInactivityTimer = millis();
+    return;
+  }
+
+  // --- СЧИТЫВАНИЕ ЗНАЧЕНИЯ ТЕМПЕРАТУРЫ ИЗ EEPROM ---
+  targetTemp = EEPROM.read(1);
+  if (targetTemp == 255) {
+    targetTemp = 20; // Значение по умолчанию
+  }
+
+  // --- ОТРИСОВКА ЗНАЧЕНИЯ ПРИ ВХОДЕ НА СТРАНИЦУ (БЕЛЫМ ЦВЕТОМ) ---
+  if (!isSetTempPageDrawn) {
+    drawSetTemppage();
+    tft->setTextSize(5);
+    tft->setTextColor(COLOR_WHITE);
+    tft->setCursor(112, 110);
+    if (targetTemp < 100) tft->print("00");
+    tft->print(targetTemp);
+    isSetTempPageDrawn = true;
+  }
+
+  if (tempMenuState == TEMP_NAVIGATING) {
+    byte prevTempItem = selectedTempItem;
+    if (enc1.isRight()) {
+      tempInactivityTimer = millis();
+      selectedTempItem++;
+      if (selectedTempItem > TEMP_EXIT) selectedTempItem = SET_TEMP;
+      updateSetTempItem(prevTempItem, false);
+      updateSetTempItem(selectedTempItem, true);
+    }
+    if (enc1.isLeft()) {
+      tempInactivityTimer = millis();
+      selectedTempItem--;
+      if (selectedTempItem > SET_TEMP) selectedTempItem = TEMP_EXIT;
+      updateSetTempItem(prevTempItem, false);
+      updateSetTempItem(selectedTempItem, true);
+    }
+  }
+
+  // --- ЛОГИКА КЛИКА ПО КНОПКЕ ---
+  if (enc1.isClick()) {
+    tempInactivityTimer = millis();
+
+    // --- ВЫХОД ПО ПУНКТУ "EXIT" ---
+    if (selectedTempItem == TEMP_EXIT) {
+      tft->fillScreen(COLOR_BACKGROUND);
+      currentPage = "SET_PAGE";
+      isStaticDrawn = false;
+      isSetPageDrawn = false;
+      isSetTimePageDrawn = false;
+      isSetTempPageDrawn = false;
+      mainInactivityTimer = millis();
+      tempInactivityTimer = millis();
+      setInactivityTimer = millis();
+      timeInactivityTimer = millis();
+      return;
+    }
+
+    // --- ВХОД/ВЫХОД ИЗ РЕЖИМА РЕДАКТИРОВАНИЯ ---
+    if (selectedTempItem == SET_TEMP) {
+      if (tempMenuState == TEMP_EDITING) {
+        // ВЫХОД ИЗ РЕДАКТИРОВАНИЯ
+        EEPROM.update(1, targetTemp); // ЗАПИСЬ В EEPROM
+        tempMenuState = TEMP_NAVIGATING;
+        // Рисуем белым цветом
+        tft->setTextSize(5);
+        tft->setTextColor(COLOR_WHITE);
+        tft->setCursor(112, 110);
+        if (targetTemp < 100) tft->print("00");
+        tft->print(targetTemp);
+      } else {
+        // ВХОД В РЕДАКТИРОВАНИЕ
+        tempMenuState = TEMP_EDITING;
+        // Рисуем жёлтым цветом
+        tft->setTextSize(5);
+        tft->setTextColor(COLOR_YELLOW);
+        tft->setCursor(112, 110);
+        if (targetTemp < 100) tft->print("00");
+        tft->print(targetTemp);
+      }
+    }
+  }
+
+  // --- ЛОГИКА ИЗМЕНЕНИЯ ЗНАЧЕНИЯ В РЕЖИМЕ РЕДАКТИРОВАНИЯ ---
+  if (tempMenuState == TEMP_EDITING) {
+    static int lastTemp = -1;
+
+    if (lastTemp == -1) {
+      lastTemp = targetTemp; // Инициализация при первом входе
+    }
+
+    if (enc1.isRight() && targetTemp < 115) {
+      tempInactivityTimer = millis();
+      targetTemp++;
+
+      // СТИРАЕМ СТАРОЕ ЗНАЧЕНИЕ ЧЁРНЫМ
+      tft->setTextSize(5);
+      tft->setTextColor(COLOR_BACKGROUND);
+      tft->setCursor(112, 110);
+      if (lastTemp < 100) tft->print("00");
+      tft->print(lastTemp);
+
+      // РИСУЕМ НОВОЕ ЗНАЧЕНИЕ ЖЁЛТЫМ
+      tft->setTextColor(COLOR_YELLOW);
+      tft->setCursor(112, 110);
+      if (targetTemp < 100) tft->print("00");
+      tft->print(targetTemp);
+
+      lastTemp = targetTemp;
+    }
+
+    if (enc1.isLeft() && targetTemp > 0) {
+      tempInactivityTimer = millis();
+      targetTemp--;
+
+      // СТИРАЕМ СТАРОЕ ЗНАЧЕНИЕ ЧЁРНЫМ
+      tft->setTextSize(5);
+      tft->setTextColor(COLOR_BACKGROUND);
+      tft->setCursor(112, 110);
+      if (lastTemp < 100) tft->print("00");
+      tft->print(lastTemp);
+
+      // РИСУЕМ НОВОЕ ЗНАЧЕНИЕ ЖЁЛТЫМ
+      tft->setTextColor(COLOR_YELLOW);
+      tft->setCursor(112, 110);
+      if (targetTemp < 100) tft->print("00");
+      tft->print(targetTemp);
+
+      lastTemp = targetTemp;
+    }
+  }
+}
+
+
+
+      // Небольшая задержка для стабильности работы энкодера
+      static unsigned long lastSetTempLoopTime = 0;
+      if (millis() - lastSetTempLoopTime < 50) return;
+      lastSetTempLoopTime = millis();
+ 
+      
+      
+  //вставляем вот сюда    
+ } //<<< вставляем до этой скобки эта скобка закрытие LOOP
+
 
 
 // --- ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ПУНКТА МЕНЮ В SET_PAGE ---
 void updateSetPageItem(byte itemIndex, bool isSelected) {
+      
+      DateTime now = rtc.now(); // Запускаем RTC
+      int currentHour = now.hour();
+      int currentMinute = now.minute();
+      tft->setTextColor(COLOR_WHITE);     // устанавливаем цвет текста
+      tft->setCursor(175, 51);
+      if (currentHour < 10) {             // проверяем если время <10
+      tft->print("0"); }                  // печатаем 0 перед часами
+      tft->print(currentHour);            // печатаем часы с RTC
+      if (currentHour != lastHour) {      // проверяем если новые часы не равны старым
+      tft->setTextColor(COLOR_BACKGROUND);// устанавливаем черный цвет
+      tft->setCursor(175, 51);
+      if (lastHour < 10) {                // проверяем если время <10
+      tft->print("0");}                   // печатаем 0 перед часами
+      tft->print(lastHour);               // печатаем старые часы черным цветом
+      tft->setTextColor(COLOR_WHITE);     // устанавливаем белый цвет
+      tft->setCursor(175, 51);
+      if (currentHour < 10) {             // проверяем если время <10
+      tft->print("0");}                   // печатаем 0 перед минутами
+      tft->print(currentHour);            // печатаем обновленное время белым цветом
+      lastHour = currentHour;}            // приравниваем новыепоказания часов к старым
+      tft->setTextColor(COLOR_WHITE);     // ставим белый цвет
+      tft->setCursor(192, 51);
+      tft->print(":");                    // печатаем разделение между часами и минутами
+      tft->setTextColor(COLOR_WHITE);
+      tft->setCursor(202, 51);
+      if (currentMinute < 10) {           // проверяем если минуты <10
+      tft->print("0");}                   // печатаем 0 перед минутами
+      tft->print(currentMinute);          // печатаем минуты с RTC
+      if (currentMinute != lastMinute) {  // проверяем если новые минуты не равны старым
+      tft->setTextColor(COLOR_BACKGROUND);// устанавливаем черный цвет  
+      tft->setCursor(202, 51); 
+      if (lastMinute < 10) {              // проверяем если минуты <10
+      tft->print("0");}                   // печатаем 0 перед минутами
+      tft->print(lastMinute);             // печатаем старые минуты черным цветом
+      tft->setTextColor(COLOR_WHITE);     // ставим белый цвет
+      tft->setCursor(202, 51);   
+      if (currentMinute < 10) {           // проверяем если минуты <10
+      tft->print("0");}                   // печатаем 0 перед минутами
+      tft->print(currentMinute);          // печатаем минуты с RTC
+      lastMinute = currentMinute;}        // приравниваем новыепоказания минут к старым
+      
+  // --- ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ПУНКТА МЕНЮ В SET_PAGE (ТОЛЬКО ВЫДЕЛЕНИЕ) ---
   const int itemHeight = 20;
-  const int startY = 40;
-  int x = 20, y = startY + itemIndex * itemHeight;
+  const int startY = 30;
+  int x = 40; // Начальная координата X для всех пунктов
+  int y = startY + itemIndex * itemHeight; // Координата Y для текущего пункта
 
+  // --- 1. СТИРАЕМ СТАРУЮ РАМКУ ---
+  // Чтобы стереть рамку, рисуем ее цветом фона.
+  // Координаты подобраны так, чтобы рамка была вокруг текста с небольшим отступом.
+  tft->drawRect(x - 6, y - 6, 126, itemHeight, COLOR_BACKGROUND);
+
+  // --- 2. РИСУЕМ ТЕКСТ ПУНКТА МЕНЮ (ВСЕГДА БЕЛЫМ) ---
+  tft->setTextColor(COLOR_WHITE);
   tft->setCursor(x, y);
 
-  // ПРОХОД 1: стираем старый текст — перекрашиваем в цвет фона
-  tft->setTextColor(COLOR_BACKGROUND);
+  // Выводим надпись в зависимости от номера пункта
   switch (itemIndex) {
     case MENU_ITEM_SET_TIME:
       tft->print("Set Time: ......... ");
@@ -434,118 +833,36 @@ void updateSetPageItem(byte itemIndex, bool isSelected) {
     case MENU_ITEM_SET_FROST:
       tft->print("Set Frosting: ..... ");
       break;
-    case MENU_ITEM_SET_TIMER:
-      tft->print("Set Timer:");
+    case MENU_ITEM_SET_TIMER_1:
+      tft->print("Set Timer 1:");
+      break;
+    case MENU_ITEM_SET_TIMER_2:
+      tft->print("Set Timer 2:");
+      break;
+    case MENU_ITEM_SET_TIMER_3:
+      tft->print("Set Timer 3:");
+      break;
+    case MENU_ITEM_SET_TIMER_4:
+      tft->print("Set Timer 4:");
       break;
     case MENU_ITEM_EXIT:
       tft->print("EXIT");
       break;
   }
 
-  // ПРОХОД 2: рисуем текст нужным цветом
-  if (isSelected) {
-    tft->setTextColor(COLOR_YELLOW);
-  } else {
-    tft->setTextColor(COLOR_WHITE);
-  }
-  tft->setCursor(x, y); // Обязательно повторно устанавливаем курсор!
-  switch (itemIndex) {
-    case MENU_ITEM_SET_TIME:
-      tft->print("Set Time: ......... ");
-      tft->setTextColor(COLOR_WHITE);
-      tft->print("00");
-      tft->print(":");
-      tft->print("00");
-      break;
-    case MENU_ITEM_SET_TEMP:
-      tft->print("Set Temperature: .. ");
-      tft->setTextColor(COLOR_WHITE);
-      tft->print("000");
-      break;
-    case MENU_ITEM_SET_HYST:
-      tft->print("Set Hysteresis: ... ");
-      tft->setTextColor(COLOR_WHITE);
-      tft->print("00");
-      break;
-    case MENU_ITEM_SET_FROST:
-      tft->print("Set Frosting: ..... ");
-      tft->setTextColor(COLOR_WHITE);
-      tft->print("00");
-      break;
-    case MENU_ITEM_SET_TIMER:
-      tft->print("Set Timer:");
-      break;
-    case MENU_ITEM_EXIT:
-      tft->print("EXIT");
-      break;
-  }
+   // --- 3. РИСУЕМ НОВУЮ РАМКУ ЕСЛИ ПУНКТ ВЫБРАН ---
+   // Рисуем рамку ПОВЕРХ текста.
+   if (isSelected) {
+       // Рисуем НЕЗАКРАШЕННЫЙ (только контур) белый прямоугольник.
+       // Координаты x-2, y-2 создают отступ в 2 пикселя вокруг текста.
+       // Ширина и height подобраны для стандартного пункта меню.
+       tft->drawRect(x - 6, y - 6, 126, itemHeight, COLOR_YELLOW); 
+   }
 }
-
-
-// --- ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ПУНКТА МЕНЮ В SET_TIMER ---
-void updateTimerPageItem(byte itemIndex, bool isSelected) {
-  const int itemHeight = 20;
-  const int startY = 40;
-  int x = 20, y = startY + itemIndex * itemHeight;
-
-  tft->setCursor(x, y);
-
-  // ПРОХОД 1: стираем старый текст — перекрашиваем в цвет фона
-  tft->setTextColor(COLOR_BACKGROUND);
-  switch (itemIndex) {
-    case MENU_ITEM_TIMER_1:
-      tft->print("Timer 1: ");
-      tft->print(timer1);
-      break;
-    case MENU_ITEM_TIMER_2:
-      tft->print("Timer 2: ");
-      tft->print(timer2);
-      break;
-    case MENU_ITEM_TIMER_3:
-      tft->print("Timer 3: ");
-      tft->print(timer3);
-      break;
-    case MENU_ITEM_TIMER_4:
-      tft->print("Timer 4: ");
-      tft->print(timer4);
-      break;
-    case MENU_ITEM_EXIT_TIMER:
-      tft->print("EXIT");
-      break;
-  }
-
-  // ПРОХОД 2: рисуем текст нужным цветом
-  if (isSelected) {
-    tft->setTextColor(COLOR_YELLOW);
-  } else {
-    tft->setTextColor(COLOR_WHITE);
-  }
-  tft->setCursor(x, y); // Обязательно повторно устанавливаем курсор!
-  switch (itemIndex) {
-    case MENU_ITEM_TIMER_1:
-      tft->print("Timer 1: ");
-      tft->print(timer1);
-      break;
-    case MENU_ITEM_TIMER_2:
-      tft->print("Timer 2: ");
-      tft->print(timer2);
-      break;
-    case MENU_ITEM_TIMER_3:
-      tft->print("Timer 3: ");
-      tft->print(timer3);
-      break;
-    case MENU_ITEM_TIMER_4:
-      tft->print("Timer 4: ");
-      tft->print(timer4);
-      break;
-    case MENU_ITEM_EXIT_TIMER:
-      tft->print("EXIT");
-      break;
-  }
- }
-
+  
 // Загружаем главную страницу с отрисовкой надписей и шкал приборов
 void drawBackground() {
+      
       // --- НАСТРОЙКА ПАРАМЕТРОВ ТЕКСТА ---
       // Задаем цвет (белый)
       tft->setTextColor(COLOR_WHITE); 
@@ -642,6 +959,10 @@ void drawBackground() {
       tft->print((char)248);   // символ градусов!
       tft->setCursor(233, 173);// координаты установки х=230, у=173
       tft->print("C");
+      
+      // Сбрасываем "память" о старых значениях температуры и влажности перед отрисовкой динамики
+      lastTemperature = -1; 
+      lastHumidity = -1;
      }
 
 // Рисуем динамические части интерфейса, стрелки digital indicator,clock, меню выбора работы   
@@ -717,19 +1038,14 @@ void drawDinamointerface() {
     // Сохраняем новое значение минут
     lastMinute = currentMinute;
   }
-      
-      // ---  СТРЕЛКИ ВЛАЖНОСТИ ---
-      // Линия из центра (HUM_CENTER_X, HUM_CENTER_Y)
-      // в точку (HUM_CENTER_X - длина, HUM_CENTER_Y)
-      //tft->drawLine(HUM_CENTER_X, HUM_CENTER_Y, HUM_CENTER_X - HUM_NEEDLE_LENGTH, HUM_CENTER_Y, COLOR_YELLOW);
-      
+        //Цифровые и аналоговые индикаторы
         // --- ВЛАЖНОСТЬ ---
        int currentHumidity = shtSensor.readHumidity(); // устанавливаем отображение влажности целым числом
        tft->setTextColor(COLOR_WHITE);
        tft->setCursor(40, 173);
        tft->print(currentHumidity);
        
-       if (currentHumidity != lastHumidity) {
+       
        // СЧИТЫВАЕМ СВЕЖИЕ ДАННЫЕ ТОЛЬКО ЕСЛИ НУЖНО ОБНОВЛЕНИЕ! 
        
          // Координаты цифровых индикаторов влажности
@@ -751,6 +1067,7 @@ void drawDinamointerface() {
       float oldAngleHum = (lastHumidity * 0.9) + 270;
       int16_t oldXEndHum = HUM_CENTER_X + (int16_t)(sin(oldAngleHum * (PI / 180.0)) * HUM_NEEDLE_LENGTH);
       int16_t oldYEndHum = HUM_CENTER_Y - (int16_t)(cos(oldAngleHum * (PI / 180.0)) * HUM_NEEDLE_LENGTH);
+      //tft->drawLine(HUM_CENTER_X, HUM_CENTER_Y, oldXEndHum, oldYEndHum, COLOR_YELLOW);
       tft->drawLine(HUM_CENTER_X, HUM_CENTER_Y, oldXEndHum, oldYEndHum, COLOR_BACKGROUND);
 
       // 2. РИСУЕМ НОВУЮ СТРЕЛКУ ВЛАЖНОСТИ
@@ -759,11 +1076,12 @@ void drawDinamointerface() {
       int16_t newXEndHum = HUM_CENTER_X + (int16_t)(sin(newAngleHum * (PI / 180.0)) * HUM_NEEDLE_LENGTH);
       int16_t newYEndHum = HUM_CENTER_Y - (int16_t)(cos(newAngleHum * (PI / 180.0)) * HUM_NEEDLE_LENGTH);
       tft->drawLine(HUM_CENTER_X, HUM_CENTER_Y, newXEndHum, newYEndHum, COLOR_YELLOW);
+      //tft->drawLine(HUM_CENTER_X, HUM_CENTER_Y, newXEndHum, newYEndHum, COLOR_BACKGROUND);
     
         // Сохраняем новое значение влажности 
         lastHumidity = currentHumidity;
       } 
-    }
+   
       
       // --- ТЕМПЕРАТУРА ---
       int currentTemperature = shtSensor.readTemperature(); // Устанавливаем отображение температурыцелым числом
@@ -775,6 +1093,7 @@ void drawDinamointerface() {
       
       //координаты цифровых индикаторов температуры
       if (currentTemperature != lastTemperature) {
+        
         //  СТИРАЕМ СТАРЫЙ ЦИФРОВОЙ указатель температуры
       tft->setTextColor(COLOR_BACKGROUND);
       tft->setCursor(185, 173); // Координаты цифрового указателя температуры
@@ -793,6 +1112,7 @@ void drawDinamointerface() {
       float oldAngle = (lastTemperature * 1.5) + 270;
       int16_t oldXEnd = TEMP_CENTER_X + (int16_t)(sin(oldAngle * (PI / 180.0)) * TEMP_NEEDLE_LENGTH);
       int16_t oldYEnd = TEMP_CENTER_Y - (int16_t)(cos(oldAngle * (PI / 180.0)) * TEMP_NEEDLE_LENGTH);
+      //tft->drawLine(TEMP_CENTER_X, TEMP_CENTER_Y, oldXEnd, oldYEnd, COLOR_YELLOW);
       tft->drawLine(TEMP_CENTER_X, TEMP_CENTER_Y, oldXEnd, oldYEnd, COLOR_BACKGROUND);
 
       // РИСУЕМ НОВУЮ СТРЕЛКУ
@@ -801,6 +1121,7 @@ void drawDinamointerface() {
       int16_t newXEnd = TEMP_CENTER_X + (int16_t)(sin(newAngle * (PI / 180.0)) * TEMP_NEEDLE_LENGTH);
       int16_t newYEnd = TEMP_CENTER_Y - (int16_t)(cos(newAngle * (PI / 180.0)) * TEMP_NEEDLE_LENGTH);
       tft->drawLine(TEMP_CENTER_X, TEMP_CENTER_Y, newXEnd, newYEnd, COLOR_YELLOW);
+      //tft->drawLine(TEMP_CENTER_X, TEMP_CENTER_Y, newXEnd, newYEnd, COLOR_BACKGROUND);
        
       // Сохраняем новое значение температуры
       lastTemperature = currentTemperature;
@@ -856,20 +1177,91 @@ void drawSetpage() {
   }
 }
 
+// --- ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ПУНКТА В МЕНЮ SET_TIME ---
+void updateSetTimeItem(byte itemIndex, bool isSelected) {
+ 
+  // --- РИСУЕМ ЭЛЕМЕНТ В ЗАВИСИМОСТИ ОТ itemIndex ---
+  switch (itemIndex) {
+    case TIME_HOURS:
+      tft->drawRect(95, 100, 58, 50, (isSelected ? COLOR_YELLOW : COLOR_BACKGROUND));
+      break;
 
-//Рисуем страницу для установки таймеров
-void drawTimerpage() {
-  tft->fillScreen(COLOR_BACKGROUND);
-  tft->setTextColor(COLOR_WHITE);
-  tft->setTextSize(2);
+    case TIME_MINUTES:
+      tft->drawRect(171, 100, 58, 50, (isSelected ? COLOR_YELLOW : COLOR_BACKGROUND));
+      break;
 
-  // Заголовок страницы
-  tft->setCursor(85, 10);
-  tft->print("TIMER SETTINGS");
-  tft->setTextSize(1);
-
-  // Отрисовываем все пункты меню таймеров, выделяя текущий
-  for (byte i = MENU_ITEM_TIMER_1; i <= MENU_ITEM_EXIT_TIMER; i++) {
-    updateTimerPageItem(i, (i == selectedTimerItem));
+    case TIME_EXIT:
+      // Рисуем кнопку текущим цветом
+      tft->drawRect(112, 190, 85, 40, (isSelected ? COLOR_YELLOW : COLOR_BACKGROUND));
+      break;
   }
 }
+
+
+// --- ОТРИСОВКА СТРАНИЦЫ УСТАНОВКИ ВРЕМЕНИ ---
+void drawSetTimepage() {
+    // Очищаем экран перед отрисовкой
+    tft->fillScreen(COLOR_BACKGROUND); 
+
+    // --- 1. ЗАГОЛОВОК (ШРИФТ 2) ---
+    tft->setTextSize(3);
+    tft->setTextColor(COLOR_WHITE);
+    tft->setCursor(90, 30); // Координаты по центру сверху
+    tft->print("SET TIME");
+    // --- РИСУЕМ ДВОЕТОЧИЕ ---
+    tft->setTextSize(4);
+    tft->setCursor(152, 110);
+    tft->setTextColor(COLOR_WHITE);
+    tft->print(":");
+    tft->setTextSize(3);
+    tft->setCursor(122, 200);
+    tft->print("EXIT");
+    
+    // Отрисовываем все пункты меню, выделяя текущий
+  for (byte i = TIME_HOURS; i <= TIME_EXIT; i++) {
+    updateSetTimeItem(i, (i == selectedTimeItem));
+  }
+}
+
+// --- ОТРИСОВКА СТРАНИЦЫ УСТАНОВКИ ТЕМПЕРАТУРЫ ---
+void drawSetTemppage() {
+    // Очищаем экран перед отрисовкой
+    tft->fillScreen(COLOR_BACKGROUND); 
+
+    // --- 1. ЗАГОЛОВОК (ШРИФТ 2) ---
+    tft->setTextSize(3);
+    tft->setTextColor(COLOR_WHITE);
+    tft->setCursor(30, 30); // Координаты по центру сверху
+    tft->print("SET TEMPERATURE");
+    /*
+    tft->setTextSize(5);
+    tft->setCursor(112, 110);
+    tft->setTextColor(COLOR_WHITE);
+    tft->print("000");
+    */
+    tft->setTextSize(3);
+    tft->setCursor(122, 200);
+    tft->print("EXIT");
+    
+    // Отрисовываем все пункты меню, выделяя текущий
+  for (byte i = SET_TEMP; i <= TEMP_EXIT; i++) {
+    updateSetTempItem(i, (i == selectedTempItem));
+  }
+}
+
+// --- ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ПУНКТА В МЕНЮ SET_TEMP ---
+void updateSetTempItem(byte itemIndex, bool isSelected) {
+ 
+  // --- РИСУЕМ ЭЛЕМЕНТ В ЗАВИСИМОСТИ ОТ itemIndex ---
+  switch (itemIndex) {
+    case SET_TEMP:
+      tft->drawRect(103, 103, 104, 48, (isSelected ? COLOR_YELLOW : COLOR_BACKGROUND));
+      break;
+
+    case TEMP_EXIT:
+      // Рисуем кнопку текущим цветом
+      tft->drawRect(112, 190, 85, 40, (isSelected ? COLOR_YELLOW : COLOR_BACKGROUND));
+      break;
+  }
+}
+
