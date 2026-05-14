@@ -188,6 +188,7 @@ void setup() {
       // Инициализируем пины
       pinMode(RELAY_PIN, OUTPUT);
       digitalWrite(RELAY_PIN, HIGH); // Реле выключено по умолчанию
+      
       // --- НАСТРОЙКА ЭНКОДЕРА ---
       enc1.setType(TYPE2); // Настраиваем тип энкодера (самый распространенный)
     
@@ -198,12 +199,13 @@ void setup() {
       if (savedMode == 'a') activeMode = "AUTO";
       if (savedMode == 'f') activeMode = "OFF";
 
-      // Читаем сохраненную температуру (по адресу 1)
+      // --- ЧТЕНИЕ ЗНАЧЕНИЯ ТЕМПЕРАТУРЫ ИЗ EEPROM ПРИ СТАРТЕ ---
       targetTemp = EEPROM.read(1);
-     /* char savedTemp = EEPROM.read(1);
-      if (savedTemp >= '0' && savedTemp <= '9') {
-          targetTemp = savedTemp - '0'; // Преобразуем символ в число
-  }*/
+      // --- ЗАЩИТА ОТ "МУСОРА" ---
+      // Если в памяти лежит 255 (пусто) или число больше нашего максимума (115)
+      if (targetTemp == 255 || targetTemp > 115) {
+      targetTemp = 10; // Устанавливаем безопасное значение по умолчанию
+      }
 
       // Читаем сохраненный гистерезис (по адресу 2)
       char savedHyst = EEPROM.read(2);
@@ -251,13 +253,13 @@ void setup() {
   
       tft->setCursor(10, 60);
       tft->print("Temp Sensor: ");
-      tft->print(shtSensor.readTemperature()); // Получаем температуру с датчика
+      tft->print(shtSensor.readTemperature());tft->print((char)248);tft->print("C"); // Получаем температуру с датчика
   
   delay(1000);
   
       tft->setCursor(10, 80);
       tft->print("Set Temp (EEPROM): ");
-      tft->print(targetTemp); // Значение из памяти
+      tft->print(targetTemp);tft->print((char)248);tft->print("C"); // Значение из памяти
   
   delay(1000);
   
@@ -380,6 +382,7 @@ void setup() {
           // --- ПЕРЕХОД В ОКНО УСТАНОВКИ ВРЕМЕНИ ---
           else if (selectedMenuItem == MENU_ITEM_SET_TIME) {
               selectedTimeItem = TIME_EXIT; // Сбрасываем позицию курсора
+              timeMenuState = NAVIGATING;
               tft->fillScreen(COLOR_BACKGROUND);
               currentPage = "SET_TIME_PAGE";
               isStaticDrawn = false;
@@ -395,9 +398,11 @@ void setup() {
            // --- ПЕРЕХОД В ОКНО УСТАНОВКИ ТЕМПЕРАТУРЫ ---
           else if (selectedMenuItem == MENU_ITEM_SET_TEMP) {
               // --- СБРОС КУРСОРА ПРИ ВХОДЕ НА СТРАНИЦУ ---
-              selectedTempItem = TEMP_EXIT; 
+              selectedTempItem = TEMP_EXIT;
+              tempMenuState = TEMP_NAVIGATING; 
               tft->fillScreen(COLOR_BACKGROUND);
               currentPage = "SET_TEMP_PAGE";
+              tempMenuState = false;
               isStaticDrawn = false;
               isSetPageDrawn = false;
               isSetTimePageDrawn = false;
@@ -414,7 +419,7 @@ void setup() {
               if (!isSetPageDrawn) {
               drawSetpage();
               isSetPageDrawn = true;
-              EEPROM.update(1, targetTemp);
+              targetTemp = EEPROM.read(1);
       }
 
       static unsigned long lastSetLoopTime = 0;
@@ -478,6 +483,7 @@ void setup() {
           if (selectedTimeItem == TIME_EXIT) {
               tft->fillScreen(COLOR_BACKGROUND);
               currentPage = "SET_PAGE";
+              timeMenuState = NAVIGATING;
               isStaticDrawn = false;
               isSetPageDrawn = false;
               isSetTimePageDrawn = false;
@@ -608,6 +614,7 @@ if (currentPage == "SET_TEMP_PAGE") {
   // --- ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
   if (millis() - tempInactivityTimer > inactivityTime) {
     tft->fillScreen(COLOR_BACKGROUND);
+    targetTemp = EEPROM.read(1);
     currentPage = "SET_PAGE";
     isStaticDrawn = false;
     isSetPageDrawn = false;
@@ -620,11 +627,11 @@ if (currentPage == "SET_TEMP_PAGE") {
     return;
   }
   
-  // --- ОТРИСОВКА ЗНАЧЕНИЯ ПРИ ВХОДЕ НА СТРАНИЦУ (БЕЛЫМ ЦВЕТОМ) ---
+  // --- ЗАГРУЖАЕМ СТРАНИЦУ SetTemppage ЕСЛИ ОНА НЕ ЗАГРУЖЕНА ---
   if (!isSetTempPageDrawn) {
     drawSetTemppage();
     isSetTempPageDrawn = true;
-    targetTemp =  EEPROM.read(1);
+    targetTemp = EEPROM.read(1);
   }
       static int lastTargetTemp = -1;
       lastTargetTemp = targetTemp;
@@ -637,6 +644,7 @@ if (currentPage == "SET_TEMP_PAGE") {
     if (selectedTempItem == TEMP_EXIT) {
       tft->fillScreen(COLOR_BACKGROUND);
       currentPage = "SET_PAGE";
+      //tempMenuState = TEMP_NAVIGATING;
       EEPROM.update(1, targetTemp);
       isStaticDrawn = false;
       isSetPageDrawn = false;
@@ -776,7 +784,9 @@ void updateSetPageItem(byte itemIndex, bool isSelected) {
       
       // Печатаем значение установленной температуры из EEPROM 
       tft->setTextColor(COLOR_WHITE);     // ставим белый цвет
-      tft->setCursor(190, 71);
+      tft->setCursor(185, 71);
+      if (targetTemp < 100) tft->print("0");
+      if (targetTemp < 10) tft->print("0");
       tft->print(targetTemp);tft->print((char)248);tft->print("C");
       
   // --- ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ПУНКТА МЕНЮ В SET_PAGE (ТОЛЬКО ВЫДЕЛЕНИЕ) ---
@@ -942,7 +952,8 @@ void drawBackground() {
 
 // Рисуем динамические части интерфейса, стрелки digital indicator,clock, меню выбора работы   
 void drawDinamointerface() {
-  
+      
+      targetTemp = EEPROM.read(1);
       DateTime now = rtc.now(); // Запускаем RTC
       int currentHour = now.hour();
       int currentMinute = now.minute();
@@ -1239,8 +1250,3 @@ void drawSetTemppage() {
       break;
   }
 }
-
-// проблема в том что не устанавливается температура в настройках set temp
-// и соответственно не сохроняется в EEPROM, и еще баги при отрисовке чисел
-// в изменении температуры, я пытался сделать по подобии так как сделал с часами
-// но почему то ни фига не выходит

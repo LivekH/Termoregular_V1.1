@@ -382,6 +382,7 @@ void setup() {
           // --- ПЕРЕХОД В ОКНО УСТАНОВКИ ВРЕМЕНИ ---
           else if (selectedMenuItem == MENU_ITEM_SET_TIME) {
               selectedTimeItem = TIME_EXIT; // Сбрасываем позицию курсора
+              timeMenuState = NAVIGATING;
               tft->fillScreen(COLOR_BACKGROUND);
               currentPage = "SET_TIME_PAGE";
               isStaticDrawn = false;
@@ -397,9 +398,11 @@ void setup() {
            // --- ПЕРЕХОД В ОКНО УСТАНОВКИ ТЕМПЕРАТУРЫ ---
           else if (selectedMenuItem == MENU_ITEM_SET_TEMP) {
               // --- СБРОС КУРСОРА ПРИ ВХОДЕ НА СТРАНИЦУ ---
-              selectedTempItem = TEMP_EXIT; 
+              selectedTempItem = TEMP_EXIT;
+              tempMenuState = TEMP_NAVIGATING; 
               tft->fillScreen(COLOR_BACKGROUND);
               currentPage = "SET_TEMP_PAGE";
+              tempMenuState = false;
               isStaticDrawn = false;
               isSetPageDrawn = false;
               isSetTimePageDrawn = false;
@@ -416,7 +419,7 @@ void setup() {
               if (!isSetPageDrawn) {
               drawSetpage();
               isSetPageDrawn = true;
-              EEPROM.update(1, targetTemp);
+              targetTemp = EEPROM.read(1);
       }
 
       static unsigned long lastSetLoopTime = 0;
@@ -480,6 +483,7 @@ void setup() {
           if (selectedTimeItem == TIME_EXIT) {
               tft->fillScreen(COLOR_BACKGROUND);
               currentPage = "SET_PAGE";
+              timeMenuState = NAVIGATING;
               isStaticDrawn = false;
               isSetPageDrawn = false;
               isSetTimePageDrawn = false;
@@ -610,6 +614,7 @@ if (currentPage == "SET_TEMP_PAGE") {
   // --- ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
   if (millis() - tempInactivityTimer > inactivityTime) {
     tft->fillScreen(COLOR_BACKGROUND);
+    targetTemp = EEPROM.read(1);
     currentPage = "SET_PAGE";
     isStaticDrawn = false;
     isSetPageDrawn = false;
@@ -622,11 +627,11 @@ if (currentPage == "SET_TEMP_PAGE") {
     return;
   }
   
-  // --- ОТРИСОВКА ЗНАЧЕНИЯ ПРИ ВХОДЕ НА СТРАНИЦУ (БЕЛЫМ ЦВЕТОМ) ---
+  // --- ЗАГРУЖАЕМ СТРАНИЦУ SetTemppage ЕСЛИ ОНА НЕ ЗАГРУЖЕНА ---
   if (!isSetTempPageDrawn) {
     drawSetTemppage();
     isSetTempPageDrawn = true;
-    targetTemp =  EEPROM.read(1);
+    targetTemp = EEPROM.read(1);
   }
       static int lastTargetTemp = -1;
       lastTargetTemp = targetTemp;
@@ -639,6 +644,7 @@ if (currentPage == "SET_TEMP_PAGE") {
     if (selectedTempItem == TEMP_EXIT) {
       tft->fillScreen(COLOR_BACKGROUND);
       currentPage = "SET_PAGE";
+      //tempMenuState = TEMP_NAVIGATING;
       EEPROM.update(1, targetTemp);
       isStaticDrawn = false;
       isSetPageDrawn = false;
@@ -946,7 +952,8 @@ void drawBackground() {
 
 // Рисуем динамические части интерфейса, стрелки digital indicator,clock, меню выбора работы   
 void drawDinamointerface() {
-  
+      
+      targetTemp = EEPROM.read(1);
       DateTime now = rtc.now(); // Запускаем RTC
       int currentHour = now.hour();
       int currentMinute = now.minute();
