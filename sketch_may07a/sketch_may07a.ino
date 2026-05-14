@@ -188,6 +188,7 @@ void setup() {
       // Инициализируем пины
       pinMode(RELAY_PIN, OUTPUT);
       digitalWrite(RELAY_PIN, HIGH); // Реле выключено по умолчанию
+      
       // --- НАСТРОЙКА ЭНКОДЕРА ---
       enc1.setType(TYPE2); // Настраиваем тип энкодера (самый распространенный)
     
@@ -198,12 +199,13 @@ void setup() {
       if (savedMode == 'a') activeMode = "AUTO";
       if (savedMode == 'f') activeMode = "OFF";
 
-      // Читаем сохраненную температуру (по адресу 1)
+      // --- ЧТЕНИЕ ЗНАЧЕНИЯ ТЕМПЕРАТУРЫ ИЗ EEPROM ПРИ СТАРТЕ ---
       targetTemp = EEPROM.read(1);
-     /* char savedTemp = EEPROM.read(1);
-      if (savedTemp >= '0' && savedTemp <= '9') {
-          targetTemp = savedTemp - '0'; // Преобразуем символ в число
-  }*/
+      // --- ЗАЩИТА ОТ "МУСОРА" ---
+      // Если в памяти лежит 255 (пусто) или число больше нашего максимума (115)
+      if (targetTemp == 255 || targetTemp > 115) {
+      targetTemp = 10; // Устанавливаем безопасное значение по умолчанию
+      }
 
       // Читаем сохраненный гистерезис (по адресу 2)
       char savedHyst = EEPROM.read(2);
@@ -251,13 +253,13 @@ void setup() {
   
       tft->setCursor(10, 60);
       tft->print("Temp Sensor: ");
-      tft->print(shtSensor.readTemperature()); // Получаем температуру с датчика
+      tft->print(shtSensor.readTemperature());tft->print((char)248);tft->print("C"); // Получаем температуру с датчика
   
   delay(1000);
   
       tft->setCursor(10, 80);
       tft->print("Set Temp (EEPROM): ");
-      tft->print(targetTemp); // Значение из памяти
+      tft->print(targetTemp);tft->print((char)248);tft->print("C"); // Значение из памяти
   
   delay(1000);
   
@@ -776,7 +778,9 @@ void updateSetPageItem(byte itemIndex, bool isSelected) {
       
       // Печатаем значение установленной температуры из EEPROM 
       tft->setTextColor(COLOR_WHITE);     // ставим белый цвет
-      tft->setCursor(190, 71);
+      tft->setCursor(185, 71);
+      if (targetTemp < 100) tft->print("0");
+      if (targetTemp < 10) tft->print("0");
       tft->print(targetTemp);tft->print((char)248);tft->print("C");
       
   // --- ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ПУНКТА МЕНЮ В SET_PAGE (ТОЛЬКО ВЫДЕЛЕНИЕ) ---
@@ -1239,8 +1243,3 @@ void drawSetTemppage() {
       break;
   }
 }
-
-// проблема в том что не устанавливается температура в настройках set temp
-// и соответственно не сохроняется в EEPROM, и еще баги при отрисовке чисел
-// в изменении температуры, я пытался сделать по подобии так как сделал с часами
-// но почему то ни фига не выходит
