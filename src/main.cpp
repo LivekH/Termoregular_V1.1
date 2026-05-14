@@ -750,23 +750,23 @@ if (currentPage == "SET_TEMP_PAGE") {
           tft->setTextSize(5);
           tft->setTextColor((tempMenuState == TEMP_NAVIGATING) ? COLOR_WHITE : COLOR_YELLOW);
           tft->setCursor(112, 110);
-      if (targetTemp < 100) tft->print("0");
-      if (targetTemp < 10) tft->print("0");
+      if (targetTemp < 100) tft->print(" ");
+      if (targetTemp < 10) tft->print(" ");
           tft->print(targetTemp);
       if (targetTemp != lastTargetTemp) {
           // 1. Стираем старое значение черным цветом
           tft->setTextSize(5);
           tft->setTextColor(COLOR_BACKGROUND);
           tft->setCursor(112, 110);
-      if (lastTargetTemp < 100) tft->print("0");
-      if (lastTargetTemp < 10) tft->print("0");
+      if (lastTargetTemp < 100) tft->print(" ");
+      if (lastTargetTemp < 10) tft->print(" ");
           tft->print(lastTargetTemp);
 
           // 2. Рисуем новое значение желтым цветом
           tft->setTextColor((tempMenuState == TEMP_NAVIGATING) ? COLOR_WHITE : COLOR_YELLOW);
           tft->setCursor(112, 110);
-          if (targetTemp < 100) tft->print("0");
-          if (targetTemp < 10) tft->print("0");
+          if (targetTemp < 100) tft->print(" ");
+          if (targetTemp < 10) tft->print(" ");
           tft->print(targetTemp);
 
           // Обновляем старое значение
@@ -780,7 +780,7 @@ if (currentPage == "SET_TEMP_PAGE") {
  
     }     
 // <<< Копируем от сюда
-        // --- ЛОГИКА СТРАНИЦЫ УСТАНОВКИ ТЕМПЕРАТУРЫ (SET_HYST_PAGE) ---
+        // --- ЛОГИКА СТРАНИЦЫ УСТАНОВКИ ГИСТЕРЕЗИСА (SET_HYST_PAGE) ---
 if (currentPage == "SET_HYST_PAGE") {
     // ИНИЦИАЛИЗАЦИЯ ТАЙМЕРА ПРИ ВХОДЕ НА СТРАНИЦУ
   // --- ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
@@ -860,7 +860,7 @@ if (currentPage == "SET_HYST_PAGE") {
       updateSetHystItem(selectedHystItem, true);}
     }
     // --- ЛОГИКА ВРАЩЕНИЯ ЭНКОДЕРА В РЕЖИМЕ РЕДАКТИРОВАНИЯ ---
-  if (hystMenuState == HYST_EXIT) {
+  if (hystMenuState == HYST_EDITING) {
 
       // --- ВРАЩЕНИЕ ВПРАВО (УВЕЛИЧЕНИЕ ТЕМПЕРАТУРЫ) ---
       if (enc1.isRight()) {
@@ -880,20 +880,20 @@ if (currentPage == "SET_HYST_PAGE") {
           tft->setTextSize(5);
           tft->setTextColor((hystMenuState == HYST_NAVIGATING) ? COLOR_WHITE : COLOR_YELLOW);
           tft->setCursor(126, 110);
-      if (targetHyst < 10) tft->print("0");
+      if (targetHyst < 10) tft->print(" ");
           tft->print(targetHyst);
       if (targetHyst != lastTargetHyst) {
           // Стираем старое значение черным цветом
           tft->setTextSize(5);
           tft->setTextColor(COLOR_BACKGROUND);
           tft->setCursor(126, 110);
-      if (lastTargetHyst < 10) tft->print("0");
+      if (lastTargetHyst < 10) tft->print(" ");
           tft->print(lastTargetHyst);
 
           // Рисуем новое значение желтым цветом
           tft->setTextColor((hystMenuState == HYST_NAVIGATING) ? COLOR_WHITE : COLOR_YELLOW);
           tft->setCursor(126, 110);
-          if (targetHyst < 10) tft->print("0");
+          if (targetHyst < 10) tft->print(" ");
           tft->print(targetHyst);
 
           // Обновляем старое значение
@@ -959,14 +959,14 @@ void updateSetPageItem(byte itemIndex, bool isSelected) {
       // Печатаем значение установленной температуры из EEPROM 
       tft->setTextColor(COLOR_WHITE);     // ставим белый цвет
       tft->setCursor(185, 71);
-      if (targetTemp < 100) tft->print("0");
-      if (targetTemp < 10) tft->print("0");
+      if (targetTemp < 100) tft->print(" ");
+      if (targetTemp < 10) tft->print(" ");
       tft->print(targetTemp);tft->print((char)248);tft->print("C");
 
       // Печатаем значение установленного гистерезиса из EEPROM 
       tft->setTextColor(COLOR_WHITE);     // ставим белый цвет
       tft->setCursor(190, 91);
-      if (targetHyst < 10) tft->print("0");
+      if (targetHyst < 10) tft->print(" ");
       tft->print(targetHyst);tft->print((char)248);tft->print("C");
       
       

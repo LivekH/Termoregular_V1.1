@@ -860,7 +860,7 @@ if (currentPage == "SET_HYST_PAGE") {
       updateSetHystItem(selectedHystItem, true);}
     }
     // --- ЛОГИКА ВРАЩЕНИЯ ЭНКОДЕРА В РЕЖИМЕ РЕДАКТИРОВАНИЯ ---
-  if (hystMenuState == HYST_EXIT) {
+  if (hystMenuState == HYST_EDITING) {
 
       // --- ВРАЩЕНИЕ ВПРАВО (УВЕЛИЧЕНИЕ ТЕМПЕРАТУРЫ) ---
       if (enc1.isRight()) {
