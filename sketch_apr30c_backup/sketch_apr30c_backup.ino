@@ -314,7 +314,8 @@ void setup() {
           drawBackground();
           isStaticDrawn = true; 
       }
-      drawDinamointerface(); 
+      drawDinamointerface();
+      EEPROM.update(1, targetTemp); 
 
       // Неблокирующая задержка
       static unsigned long lastMainLoopTime = 0;
@@ -413,6 +414,7 @@ void setup() {
               if (!isSetPageDrawn) {
               drawSetpage();
               isSetPageDrawn = true;
+              EEPROM.update(1, targetTemp);
       }
 
       static unsigned long lastSetLoopTime = 0;
@@ -695,6 +697,7 @@ if (currentPage == "SET_TEMP_PAGE") {
           tft->setTextSize(5);
           tft->setTextColor((tempMenuState == TEMP_NAVIGATING) ? COLOR_WHITE : COLOR_YELLOW);
           tft->setCursor(112, 110);
+      if (targetTemp < 100) tft->print("0");
       if (targetTemp < 10) tft->print("0");
           tft->print(targetTemp);
       if (targetTemp != lastTargetTemp) {
@@ -702,12 +705,14 @@ if (currentPage == "SET_TEMP_PAGE") {
           tft->setTextSize(5);
           tft->setTextColor(COLOR_BACKGROUND);
           tft->setCursor(112, 110);
+      if (lastTargetTemp < 100) tft->print("0");
       if (lastTargetTemp < 10) tft->print("0");
           tft->print(lastTargetTemp);
 
           // 2. Рисуем новое значение желтым цветом
           tft->setTextColor((tempMenuState == TEMP_NAVIGATING) ? COLOR_WHITE : COLOR_YELLOW);
           tft->setCursor(112, 110);
+          if (targetTemp < 100) tft->print("0");
           if (targetTemp < 10) tft->print("0");
           tft->print(targetTemp);
 
@@ -726,7 +731,8 @@ if (currentPage == "SET_TEMP_PAGE") {
 
 // --- ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ПУНКТА МЕНЮ В SET_PAGE ---
 void updateSetPageItem(byte itemIndex, bool isSelected) {
-      
+
+      // Печатаем часы реального времени
       DateTime now = rtc.now(); // Запускаем RTC
       int currentHour = now.hour();
       int currentMinute = now.minute();
@@ -767,8 +773,10 @@ void updateSetPageItem(byte itemIndex, bool isSelected) {
       tft->print("0");}                   // печатаем 0 перед минутами
       tft->print(currentMinute);          // печатаем минуты с RTC
       lastMinute = currentMinute;}        // приравниваем новыепоказания минут к старым
+      
+      // Печатаем значение установленной температуры из EEPROM 
       tft->setTextColor(COLOR_WHITE);     // ставим белый цвет
-      tft->setCursor(202, 71);
+      tft->setCursor(190, 71);
       tft->print(targetTemp);tft->print((char)248);tft->print("C");
       
   // --- ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ПУНКТА МЕНЮ В SET_PAGE (ТОЛЬКО ВЫДЕЛЕНИЕ) ---
@@ -1222,7 +1230,7 @@ void drawSetTemppage() {
   // --- РИСУЕМ ЭЛЕМЕНТ В ЗАВИСИМОСТИ ОТ itemIndex ---
   switch (itemIndex) {
     case SET_TEMP:
-      tft->drawRect(103, 103, 104, 48, (isSelected ? COLOR_YELLOW : COLOR_BACKGROUND));
+      tft->drawRect(103, 103, 105, 48, (isSelected ? COLOR_YELLOW : COLOR_BACKGROUND));
       break;
 
     case TEMP_EXIT:
