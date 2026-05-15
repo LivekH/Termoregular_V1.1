@@ -1,5 +1,5 @@
 //Блок 1 установка библиотек, назначение пинов установка констант для стрелок, цветов, режимов работы
-// --- 1. ПОДКЛЮЧАЕМ ВСЕ НЕОБХОДИМЫЕ БИБЛИОТЕКИ ---
+// --- ПОДКЛЮЧАЕМ ВСЕ НЕОБХОДИМЫЕ БИБЛИОТЕКИ ---
 
 #include <Arduino_GFX_Library.h> // Библиотека для работы с дисплеем
 #include <EEPROM.h>              // Библиотека для работы с энергонезависимой памятью (EEPROM)
@@ -40,7 +40,7 @@ Adafruit_SHT31 shtSensor = Adafruit_SHT31(); // Создаем объект да
 RTC_DS3231 rtc;                                 // Создаем объект часов DS3231
 Encoder enc1(CLK, DT, SW); // Создаем объект энкодера
 
-// --- 4. ОПРЕДЕЛЯЕМ КОНСТАНТЫ (КООРДИНАТЫ, РАЗМЕРЫ) ---
+// ---  ОПРЕДЕЛЯЕМ КОНСТАНТЫ (КООРДИНАТЫ, РАЗМЕРЫ) ---
 
 // --- КООРДИНАТЫ ЦЕНТРОВ ПРИБОРОВ (ОСНОВАНИЙ СТРЕЛОК) ---
 #define TEMP_CENTER_X 205 
@@ -52,7 +52,7 @@ Encoder enc1(CLK, DT, SW); // Создаем объект энкодера
 #define TEMP_NEEDLE_LENGTH 77 
 #define HUM_NEEDLE_LENGTH 63 
 
-// --- 5. ЗАДАЕМ ЦВЕТА В ФОРМАТЕ RGB565 (ЧИСЛОВЫЕ ЗНАЧЕНИЯ) ---
+// ---  ЗАДАЕМ ЦВЕТА В ФОРМАТЕ RGB565 (ЧИСЛОВЫЕ ЗНАЧЕНИЯ) ---
 // Используем числовые значения, чтобы не зависеть от объекта tft в библиотеке
 #define COLOR_BACKGROUND tft->color565(0, 0, 0)     // Черный
 #define COLOR_RED        tft->color565(255, 0, 0)   // Красный
@@ -94,6 +94,12 @@ Encoder enc1(CLK, DT, SW); // Создаем объект энкодера
 // --- КОНСТАНТЫ ДЛЯ МЕНЮ НАВИГАЦИИ УСТАНОВКИ ГИСТЕРЕЗИСА ---
 #define HYST_NAVIGATING 0
 #define HYST_EDITING 1
+// --- КОНСТАНТЫ ДЛЯ МЕНЮ УСТАНОВКИ ГИСТЕРЕЗИСА ---
+#define SET_FROST 0
+#define FROST_EXIT 1
+// --- КОНСТАНТЫ ДЛЯ МЕНЮ НАВИГАЦИИ УСТАНОВКИ ГИСТЕРЕЗИСА ---
+#define FROST_NAVIGATING 0
+#define FROST_EDITING 1
 
 
 
@@ -105,10 +111,25 @@ String activeMode = "AUTO";
 // --- ЗАДАЕМ ЗНАЧЕНИЯ ПО УМОЛЧАНИЮ (ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ) ---
       // --- ЗНАЧЕНИЯ ТАЙМЕРОВ ПО УМОЛЧАНИЮ ---
       // Используем тип 'byte', так как мы будем хранить значения от 0 до 9 (1 байт)
-      byte timer1 = 0; // Таймер 1 по умолчанию выключен
-      byte timer2 = 0; // Таймер 2 по умолчанию выключен
-      byte timer3 = 0; // Таймер 3 по умолчанию выключен
-      byte timer4 = 0; // Таймер 4 по умолчанию выключен
+      byte timer1HourON1 = 0; // Таймер 1 ON по умолчанию выключен
+      byte timer2MinuteON1 = 0; // Таймер 1 ON по умолчанию выключен
+      byte timer3HourOFF1 = 0; // Таймер 1 OFF по умолчанию выключен
+      byte timer4MinuteOFF1 = 0; // Таймер  OFF по умолчанию выключен
+      
+      byte timer5HourON2 = 0; // 
+      byte timer6MinuteON2 = 0; // 
+      byte timer7HourOFF2 = 0; // 
+      byte timer8MinuteOFF2 = 0; // 
+      
+      byte timer9HourON3 = 0; // 
+      byte timer10MinuteON3 = 0; // 
+      byte timer11HourOFF3 = 0; // 
+      byte timer12MinuteOFF3 = 0; // 
+
+      byte timer13HourON4 = 0; // 
+      byte timer14MinuteON4 = 0; // 
+      byte timer15HourOFF4 = 0; // 
+      byte timer16MinuteOFF4 = 0; // 
 
       // --- ОБЪЯВЛЕНИЕ ФУНКЦИЙ ---
       void drawBackground();      // Страница отрисовки ыонового изображения
@@ -116,11 +137,13 @@ String activeMode = "AUTO";
       void drawSetpage();         // Cтраница отрисовки меню Set Page
       void drawSetTimepage();     // Cтраница отрисовки меню Set Time
       void drawSetTemppage();     // Cтраница отрисовки меню Set Temp
-      void drawSetHystpage();     // Cтраница отрисовки меню Set Hyst        
+      void drawSetHystpage();     // Cтраница отрисовки меню Set Hyst
+      void drawSetFrostpage();     // Cтраница отрисовки меню Set Hyst        
       void updateSetPageItem(byte itemIndex, bool isSelected); // список пунктов меню Set Page
       void updateSetTimeItem(byte itemIndex, bool isSelected); // список пунктов меню Set Time
       void updateSetTempItem(byte itemIndex, bool isSelected); // список пунктов меню Set Temp
       void updateSetHystItem(byte itemIndex, bool isSelected); // список пунктов меню Set Hyst
+      void updateSetFrostItem(byte itemIndex, bool isSelected); // список пунктов меню Set Hyst
       
       // ---  ПЕРЕМЕННЫЕ ДЛЯ ЛОГИКИ ---
       // Переменная для хранения текущей страницы
@@ -135,6 +158,8 @@ String activeMode = "AUTO";
       bool isSetTempPageDrawn = false;
       // Флаг для отрисовки страницы установки гистерезиса
       bool isSetHystPageDrawn = false;
+      // Флаг для отрисовки страницы установки разморозки
+      bool isSetFrostPageDrawn = false;
       
       // Переменные для отслеживания бездействия пользователя
       const unsigned long inactivityTime = 10000; // 10 секунд в миллисекундах
@@ -142,7 +167,8 @@ String activeMode = "AUTO";
       unsigned long setInactivityTimer = 0;  // 
       unsigned long timeInactivityTimer = 0; //
       unsigned long tempInactivityTimer = 0; //
-      unsigned long hystInactivityTimer = 0; // 
+      unsigned long hystInactivityTimer = 0; //
+      unsigned long frostInactivityTimer = 0; //  
 
       // Переменные для логики работы с меню
       bool isSelecting = false; // Флаг: находимся ли мы в режиме выбора пункта меню
@@ -155,10 +181,13 @@ String activeMode = "AUTO";
       byte selectedTempItem = TEMP_EXIT;
       // Переменная для меню гистерезиса
       byte selectedHystItem = HYST_EXIT;
+      // Переменная для меню разморозки
+      byte selectedFrostItem = FROST_EXIT;
        // --- ПЕРЕМЕННАЯ СОСТОЯНИЯ ---
       byte timeMenuState = NAVIGATING;      // Начинаем в режиме навигации времени
       byte tempMenuState = TEMP_NAVIGATING; // Начинаем в режиме меню навигации температуры
       byte hystMenuState = HYST_NAVIGATING; // Начинаем в режиме меню навигации гистерезиса
+      byte frostMenuState = FROST_NAVIGATING; // Начинаем в режиме меню навигации разморозки
       
 
 
@@ -176,22 +205,20 @@ String activeMode = "AUTO";
 
        // Значения для Гистерезиса
       int targetHyst = 2; // Гистерезис по умолчанию
-      //int lasthyst = -1;
-      
+
+      // Значения для Разморозки
+      int targetFrost = 0; // Гистерезис по умолчанию
       
       // Для установки часов и минут
       int targetHour = 0;
       int targetMinute = 0;
       int lastHour = -1;   // Используем -1 для инициализации (заставит отрисоваться при старте)
       int lastMinute = -1;
-      
-      
-      
-      
-      
 
 
-//Блок 2 установки
+
+// --- Блок 2 установки ---
+
 void setup() {
       // --- 1. ИНИЦИАЛИЗАЦИЯ ВСЕХ КОМПОНЕНТОВ ---
       Serial.begin(9600); // запуск порта для отладки
@@ -235,10 +262,25 @@ void setup() {
       }
 
       // Читаем сохраненные таймеры (по адресам 3, 4, 5, 6)
-      timer1 = EEPROM.read(3);
-      timer2 = EEPROM.read(4);
-      timer3 = EEPROM.read(5);
-      timer4 = EEPROM.read(6);
+      timer1HourON1 = EEPROM.read(4);
+      timer2MinuteON1 = EEPROM.read(5);
+      timer3HourOFF1 = EEPROM.read(6);
+      timer4MinuteOFF1 = EEPROM.read(7);
+      
+      timer5HourON2 = EEPROM.read(8);
+      timer6MinuteON2 = EEPROM.read(9);
+      timer7HourOFF2 = EEPROM.read(10);
+      timer8MinuteOFF2 = EEPROM.read(11);
+
+      timer9HourON3 = EEPROM.read(12);
+      timer10MinuteON3 = EEPROM.read(13);
+      timer11HourOFF3 = EEPROM.read(14);
+      timer12MinuteOFF3 = EEPROM.read(15);
+      
+      timer13HourON4 = EEPROM.read(16);
+      timer14MinuteON4 = EEPROM.read(17);
+      timer15HourOFF4 = EEPROM.read(18);
+      timer16MinuteOFF4 = EEPROM.read(19);
 
 
       // --- ДИАГНОСТИЧЕСКИЙ ОТЧЕТ ПРИ СТАРТЕ ---
@@ -292,15 +334,19 @@ void setup() {
       tft->setCursor(10, 120);
       tft->print("Timers (EEPROM): ");
       tft->setCursor(10, 140);
-      tft->print("1="); tft->print(timer1);
+      tft->print("Timer 1-"); tft->print(" ON "); tft->print (timer1HourON1); tft->print(":"); tft->print (timer2MinuteON1);
+      tft->print(" - OFF "); tft->print (timer3HourOFF1); tft->print(":"); tft->print (timer4MinuteOFF1);
       tft->setCursor(10, 160);
-      tft->print("2="); tft->print(timer2);
+      tft->print("Timer 2-"); tft->print(" ON "); tft->print (timer5HourON2); tft->print(":"); tft->print (timer6MinuteON2);
+      tft->print(" - OFF "); tft->print (timer7HourOFF2); tft->print(":"); tft->print (timer8MinuteOFF2);
       tft->setCursor(10, 180);
-      tft->print("3="); tft->print(timer3);
+      tft->print("Timer 3-"); tft->print(" ON "); tft->print (timer9HourON3); tft->print(":"); tft->print (timer10MinuteON3);
+      tft->print(" - OFF "); tft->print (timer11HourOFF3); tft->print(":"); tft->print (timer12MinuteOFF3);
       tft->setCursor(10, 200);
-      tft->print("4="); tft->print(timer4);
+      tft->print("Timer 4-"); tft->print(" ON "); tft->print (timer13HourON4); tft->print(":"); tft->print (timer14MinuteON4);
+      tft->print(" - OFF "); tft->print(timer15HourOFF4); tft->print(":"); tft->print (timer16MinuteOFF4);
   
-  // --- 4. ЗАВЕРШЕНИЕ SETUP ---
+  // ---  ЗАВЕРШЕНИЕ SETUP ---
   // Ждем 5 секунд, чтобы можно было прочитать отчет
   delay(5000);
   
@@ -309,6 +355,7 @@ void setup() {
 }
 
 
+//--- Блок 3 основной цикл ---
 
   void loop() {
   // --- ОБЯЗАТЕЛЬНЫЙ ОПРОС ЭНКОДЕРА ---
@@ -328,6 +375,8 @@ void setup() {
           tempInactivityTimer = millis(); // Сбрасываем таймер для новой страницы
           setInactivityTimer = millis(); // Сбрасываем таймер SET_PAGE при возврате
           timeInactivityTimer = millis();
+          hystInactivityTimer = millis();
+          frostInactivityTimer = millis();
           return;
       }
 
@@ -337,7 +386,10 @@ void setup() {
           isStaticDrawn = true; 
       }
       drawDinamointerface();
-      EEPROM.update(1, targetTemp); 
+      //EEPROM.update(1, targetTemp);
+      targetTemp = EEPROM.read(1);
+      targetHyst = EEPROM.read(2);
+      targetFrost = EEPROM.read(3); 
 
       // Неблокирующая задержка
       static unsigned long lastMainLoopTime = 0;
@@ -346,7 +398,6 @@ void setup() {
   }
 
   // --- ЛОГИКА СТРАНИЦЫ НАСТРОЕК (SET_PAGE) ---
-  
   else if (currentPage == "SET_PAGE") {
       // --- ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
       if (millis() - setInactivityTimer > inactivityTime) {
@@ -361,8 +412,17 @@ void setup() {
           setInactivityTimer = millis(); // Сбрасываем таймер SET_PAGE при возврате
           timeInactivityTimer = millis();
           hystInactivityTimer = millis();
+          frostInactivityTimer = millis();
           return;
       }
+          // --- ОТРИСОВКА СТРАНИЦЫ SET_PAGE ---
+              if (!isSetPageDrawn) {
+              drawSetpage();
+              isSetPageDrawn = true;
+              }
+              targetTemp = EEPROM.read(1);
+              targetHyst = EEPROM.read(2);
+              targetFrost = EEPROM.read(3);
 
       // --- ПРОВЕРКА ВРАЩЕНИЯ ЭНКОДЕРА ---
       byte prevItem = selectedMenuItem;
@@ -380,12 +440,8 @@ void setup() {
           updateSetPageItem(prevItem, false);
           updateSetPageItem(selectedMenuItem, true);
       }
-          // --- ОТРИСОВКА СТРАНИЦЫ SET_PAGE ---
-              if (!isSetPageDrawn) {
-              drawSetpage();
-              isSetPageDrawn = true;
-              targetTemp = EEPROM.read(1);
-      }
+          
+      
 
       // --- ОБЪЕДИНЕННАЯ ЛОГИКА КЛИКА ПО КНОПКЕ ---
       if (enc1.isClick()) {
@@ -399,11 +455,13 @@ void setup() {
               isSetPageDrawn = false;
               isSetTimePageDrawn = false;
               isSetTempPageDrawn = false;
+              isSetFrostPageDrawn = false;
               mainInactivityTimer = millis(); // Сбрасываем таймер MAIN_PAGE
               tempInactivityTimer = millis(); // Сбрасываем таймер для новой страницы
               setInactivityTimer = millis(); // Сбрасываем таймер SET_PAGE при возврате
               timeInactivityTimer = millis();
               hystInactivityTimer = millis();
+              frostInactivityTimer = millis(); 
               return;
           }
 
@@ -413,7 +471,7 @@ void setup() {
               timeMenuState = NAVIGATING;
               tft->fillScreen(COLOR_BACKGROUND);
               currentPage = "SET_TIME_PAGE";
-              isStaticDrawn = false;
+             /* isStaticDrawn = false;
               isSetPageDrawn = false;
               isSetTimePageDrawn = false;
               isSetTempPageDrawn = false;
@@ -422,8 +480,10 @@ void setup() {
               setInactivityTimer = millis(); // Сбрасываем таймер SET_PAGE при возврате
               timeInactivityTimer = millis();
               hystInactivityTimer = millis();
+              frostInactivityTimer = millis();*/
               return;
            }
+           
            // --- ПЕРЕХОД В ОКНО УСТАНОВКИ ТЕМПЕРАТУРЫ ---
           else if (selectedMenuItem == MENU_ITEM_SET_TEMP) {
               // --- СБРОС КУРСОРА ПРИ ВХОДЕ НА СТРАНИЦУ ---
@@ -431,8 +491,7 @@ void setup() {
               tempMenuState = TEMP_NAVIGATING; 
               tft->fillScreen(COLOR_BACKGROUND);
               currentPage = "SET_TEMP_PAGE";
-              tempMenuState = false;
-              isStaticDrawn = false;
+             /* isStaticDrawn = false;
               isSetPageDrawn = false;
               isSetTimePageDrawn = false;
               isSetTempPageDrawn = false;
@@ -440,8 +499,7 @@ void setup() {
               tempInactivityTimer = millis(); // Сбрасываем таймер для новой страницы
               setInactivityTimer = millis(); // Сбрасываем таймер SET_PAGE при возврате
               timeInactivityTimer = millis();
-              hystInactivityTimer = millis();
-              
+              hystInactivityTimer = millis(); */
               return;
           }
 
@@ -452,8 +510,7 @@ void setup() {
               hystMenuState = HYST_NAVIGATING; 
               tft->fillScreen(COLOR_BACKGROUND);
               currentPage = "SET_HYST_PAGE";
-              tempMenuState = false;
-              isStaticDrawn = false;
+              /*isStaticDrawn = false;
               isSetPageDrawn = false;
               isSetTimePageDrawn = false;
               isSetTempPageDrawn = false;
@@ -462,17 +519,42 @@ void setup() {
               tempInactivityTimer = millis(); // Сбрасываем таймер для новой страницы
               setInactivityTimer = millis(); // Сбрасываем таймер SET_PAGE при возврате
               timeInactivityTimer = millis();
-              hystInactivityTimer = millis();
+              hystInactivityTimer = millis();*/
               return;
-          }        
-                  
-        }  //<<< Вставляем до этой скобки закрытие логики вращения энкодера в меню set page
-              
+          }   
 
-      static unsigned long lastSetLoopTime = 0;
-      if (millis() - lastSetLoopTime < 50) return;
-      lastSetLoopTime = millis();
-  }
+
+              // --- ПЕРЕХОД В ОКНО УСТАНОВКИ РАЗМОРОЗКИ 
+              //(ПОДДЕРЖАНИЕ ТЕМПЕРАТУРЫ ПРИ УСЛОВИИ ОТКЛЮЧЕНИЯ ПО ТАЙМЕРАМ) ---
+         else if (selectedMenuItem == MENU_ITEM_SET_FROST) {
+              selectedTimeItem = FROST_EXIT; // Сбрасываем позицию курсора
+              frostMenuState = FROST_NAVIGATING;
+              tft->fillScreen(COLOR_BACKGROUND);
+              currentPage = "SET_FROST_PAGE";
+              /*isStaticDrawn = false;
+              isSetPageDrawn = false;
+              isSetTimePageDrawn = false;
+              isSetTempPageDrawn = false;
+              isSetHystPageDrawn = false;
+              isSetFrostPageDrawn = false;
+              mainInactivityTimer = millis(); // Сбрасываем таймер MAIN_PAGE
+              tempInactivityTimer = millis(); // Сбрасываем таймер для новой страницы
+              setInactivityTimer = millis(); // Сбрасываем таймер SET_PAGE при возврате
+              timeInactivityTimer = millis();
+              hystInactivityTimer = millis();*/
+              return;
+           
+           //<<< Вставляем сюда следующие страницы логики вращения энкодера в меню set page          
+              
+              static unsigned long lastSetLoopTime = 0;
+              if (millis() - lastSetLoopTime < 50) return;
+              lastSetLoopTime = millis();
+
+      }
+    }  
+  } ///скобка закрытия else if (currentPage == "SET_PAGE")
+
+  
   // --- ЛОГИКА СТРАНИЦЫ УСТАНОВКИ ВРЕМЕНИ (SET_TIME_PAGE) ---
   else if (currentPage == "SET_TIME_PAGE") {
       // --- ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
@@ -482,10 +564,12 @@ void setup() {
           isStaticDrawn = false;
           isSetPageDrawn = false;
           isSetTimePageDrawn = false;
+          isSetFrostPageDrawn = false;
           mainInactivityTimer = millis(); // Сбрасываем таймер MAIN_PAGE
           tempInactivityTimer = millis(); // Сбрасываем таймер для новой страницы
           setInactivityTimer = millis(); // Сбрасываем таймер SET_PAGE при возврате
           timeInactivityTimer = millis();
+          frostInactivityTimer = millis();
           return;
       }
 
@@ -532,11 +616,14 @@ void setup() {
               timeMenuState = NAVIGATING;
               isStaticDrawn = false;
               isSetPageDrawn = false;
+              isSetTempPageDrawn = false;
               isSetTimePageDrawn = false;
-              mainInactivityTimer = millis(); // Сбрасываем таймер MAIN_PAGE
-              tempInactivityTimer = millis(); // Сбрасываем таймер для новой страницы
-              setInactivityTimer = millis(); // Сбрасываем таймер SET_PAGE при возврате
+              isSetFrostPageDrawn = false;
+              mainInactivityTimer = millis();
+              tempInactivityTimer = millis();
+              setInactivityTimer = millis();
               timeInactivityTimer = millis();
+              frostInactivityTimer = millis();
               return;
           }
 
@@ -665,10 +752,12 @@ if (currentPage == "SET_TEMP_PAGE") {
     isSetPageDrawn = false;
     isSetTempPageDrawn = false;
     isSetTimePageDrawn = false;
+    isSetFrostPageDrawn = false;
     mainInactivityTimer = millis();
     tempInactivityTimer = millis();
     setInactivityTimer = millis();
     timeInactivityTimer = millis();
+    frostInactivityTimer = millis();
     return;
   }
   
@@ -695,10 +784,12 @@ if (currentPage == "SET_TEMP_PAGE") {
       isSetPageDrawn = false;
       isSetTimePageDrawn = false;
       isSetTempPageDrawn = false;
+      isSetFrostPageDrawn = false;
       mainInactivityTimer = millis();
       tempInactivityTimer = millis();
       setInactivityTimer = millis();
       timeInactivityTimer = millis();
+      frostInactivityTimer = millis();
       return;
     }
     // --- ВХОД/ВЫХОД ИЗ РЕЖИМА РЕДАКТИРОВАНИЯ ---
@@ -782,6 +873,7 @@ if (currentPage == "SET_TEMP_PAGE") {
 // <<< Копируем от сюда
         // --- ЛОГИКА СТРАНИЦЫ УСТАНОВКИ ГИСТЕРЕЗИСА (SET_HYST_PAGE) ---
 if (currentPage == "SET_HYST_PAGE") {
+  
     // ИНИЦИАЛИЗАЦИЯ ТАЙМЕРА ПРИ ВХОДЕ НА СТРАНИЦУ
   // --- ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
   if (millis() - hystInactivityTimer > inactivityTime) {
@@ -793,14 +885,16 @@ if (currentPage == "SET_HYST_PAGE") {
     isSetTempPageDrawn = false;
     isSetTimePageDrawn = false;
     isSetHystPageDrawn = false;
+    isSetFrostPageDrawn = false;
     mainInactivityTimer = millis();
     tempInactivityTimer = millis();
     setInactivityTimer = millis();
     timeInactivityTimer = millis();
     hystInactivityTimer = millis();
+    frostInactivityTimer = millis();
     return;
   }
-  
+
   // --- ЗАГРУЖАЕМ СТРАНИЦУ SetHystpage ЕСЛИ ОНА НЕ ЗАГРУЖЕНА ---
   if (!isSetHystPageDrawn) {
     drawSetHystpage();
@@ -812,7 +906,7 @@ if (currentPage == "SET_HYST_PAGE") {
       
   // --- ЛОГИКА КЛИКА ПО КНОПКЕ ---
   if (enc1.isClick()) {
-    tempInactivityTimer = millis();
+    hystInactivityTimer = millis();
     // --- ВЫХОД ПО ПУНКТУ "EXIT" ---
     if (selectedHystItem == HYST_EXIT) {
       tft->fillScreen(COLOR_BACKGROUND);
@@ -824,11 +918,13 @@ if (currentPage == "SET_HYST_PAGE") {
       isSetTimePageDrawn = false;
       isSetTempPageDrawn = false;
       isSetHystPageDrawn = false;
+      isSetFrostPageDrawn = false;
       mainInactivityTimer = millis();
       tempInactivityTimer = millis();
       setInactivityTimer = millis();
       timeInactivityTimer = millis();
       hystInactivityTimer = millis();
+      frostInactivityTimer = millis();
       return;
     }
     // --- ВХОД/ВЫХОД ИЗ РЕЖИМА РЕДАКТИРОВАНИЯ ---
@@ -906,8 +1002,139 @@ if (currentPage == "SET_HYST_PAGE") {
       lastSetHystLoopTime = millis();
  
     } 
+
+       // --- ЛОГИКА СТРАНИЦЫ УСТАНОВКИ ГИСТЕРЕЗИСА (SET_FROST_PAGE) ---
+if (currentPage == "SET_FROST_PAGE") {
+    // ИНИЦИАЛИЗАЦИЯ ТАЙМЕРА ПРИ ВХОДЕ НА СТРАНИЦУ
+  // --- ПРОВЕРКА БЕЗДЕЙСТВИЯ (10 сек) ---
+  if (millis() - frostInactivityTimer > inactivityTime) {
+    tft->fillScreen(COLOR_BACKGROUND);
+    targetFrost = EEPROM.read(3);
+    currentPage = "SET_PAGE";
+    isStaticDrawn = false;
+    isSetPageDrawn = false;
+    isSetTempPageDrawn = false;
+    isSetTimePageDrawn = false;
+    isSetHystPageDrawn = false;
+    isSetFrostPageDrawn = false;
+    mainInactivityTimer = millis();
+    tempInactivityTimer = millis();
+    setInactivityTimer = millis();
+    timeInactivityTimer = millis();
+    hystInactivityTimer = millis();
+    frostInactivityTimer = millis();
+    return;
+  }
+  
+  // --- ЗАГРУЖАЕМ СТРАНИЦУ SetFrosting ЕСЛИ ОНА НЕ ЗАГРУЖЕНА ---
+  if (!isSetFrostPageDrawn) {
+    drawSetFrostpage();
+    isSetFrostPageDrawn = true;
+    targetFrost = EEPROM.read(3);
+  }
+      static int lastTargetFrost = -1;
+      lastTargetFrost = targetFrost;
+      
+  // --- ЛОГИКА КЛИКА ПО КНОПКЕ ---
+  if (enc1.isClick()) {
+    frostInactivityTimer = millis();
+    
+    // --- ВЫХОД ПО ПУНКТУ "EXIT" ---
+    if (selectedFrostItem == FROST_EXIT) {
+      tft->fillScreen(COLOR_BACKGROUND);
+      currentPage = "SET_PAGE";
+      EEPROM.update(3, targetFrost); //Сохроняем в EEPROM если значения изменились
+      isStaticDrawn = false;
+      isSetPageDrawn = false;
+      isSetTimePageDrawn = false;
+      isSetTempPageDrawn = false;
+      isSetHystPageDrawn = false;
+      isSetFrostPageDrawn = false;
+      mainInactivityTimer = millis();
+      tempInactivityTimer = millis();
+      setInactivityTimer = millis();
+      timeInactivityTimer = millis();
+      hystInactivityTimer = millis();
+      frostInactivityTimer = millis();
+      return;
+    }
+    // --- ВХОД/ВЫХОД ИЗ РЕЖИМА РЕДАКТИРОВАНИЯ ---
+    if (selectedFrostItem == SET_FROST) {
+        // Если мы УЖЕ в режиме редактирования, значит это клик на "ВЫХОД ИЗ РЕЖИМА"
+        if (frostMenuState == FROST_EDITING) {
+            frostMenuState = FROST_NAVIGATING; // Выключаем режим редактирования
+            // Цвет цифр изменится на белый автоматически благодаря нашей "умной" строчке
+        } else {
+            // Если мы НЕ в режиме редактирования, значит это клик на "ВХОД В РЕЖИМ"
+            frostMenuState = FROST_EDITING; }
+        }
+      }
+      // --- ЕСЛИ МЫ В РЕЖИМЕ НАВИГАЦИИ (МЕНЯЕМ ВЫДЕЛЕНИЕ) ---
+      if (frostMenuState == FROST_NAVIGATING) {
+    byte prevFrostItem = selectedFrostItem;
+    if (enc1.isRight()) {
+      frostInactivityTimer = millis();
+      selectedFrostItem++;
+      if (selectedFrostItem > FROST_EXIT) selectedFrostItem = SET_FROST;
+      updateSetFrostItem(prevFrostItem, false);
+      updateSetFrostItem(selectedFrostItem, true);}
+    
+    if (enc1.isLeft()) {
+      frostInactivityTimer = millis();
+      selectedFrostItem--;
+      if (selectedFrostItem > SET_FROST) selectedFrostItem = FROST_EXIT;
+      updateSetFrostItem(prevFrostItem, false);
+      updateSetFrostItem(selectedFrostItem, true);}
+    }
+    // --- ЛОГИКА ВРАЩЕНИЯ ЭНКОДЕРА В РЕЖИМЕ РЕДАКТИРОВАНИЯ ---
+  if (frostMenuState == FROST_EDITING) {
+
+      // --- ВРАЩЕНИЕ ВПРАВО (УВЕЛИЧЕНИЕ ТЕМПЕРАТУРЫ) ---
+      if (enc1.isRight()) {
+          frostInactivityTimer = millis();
+          if (targetFrost < 25) {
+              targetFrost++;}
+      }
+
+      // --- ВРАЩЕНИЕ ВЛЕВО (УМЕНЬШЕНИЕ ТЕМПЕРАТУРЫ) ---
+      if (enc1.isLeft()) {
+          frostInactivityTimer = millis();
+          if (targetFrost > 0) {
+              targetFrost--;}
+      }
+  }
+      // --- ПРОВЕРКА: ИЗМЕНИЛОСЬ ЛИ ЗНАЧЕНИЕ? ---
+          tft->setTextSize(5);
+          tft->setTextColor((frostMenuState == FROST_NAVIGATING) ? COLOR_WHITE : COLOR_YELLOW);
+          tft->setCursor(126, 110);
+      if (targetFrost < 10) tft->print(" ");
+          tft->print(targetFrost);
+      if (targetFrost != lastTargetFrost) {
+          // Стираем старое значение черным цветом
+          tft->setTextSize(5);
+          tft->setTextColor(COLOR_BACKGROUND);
+          tft->setCursor(126, 110);
+      if (lastTargetFrost < 10) tft->print(" ");
+          tft->print(lastTargetFrost);
+
+          // Рисуем новое значение желтым цветом
+          tft->setTextColor((frostMenuState == FROST_NAVIGATING) ? COLOR_WHITE : COLOR_YELLOW);
+          tft->setCursor(126, 110);
+          if (targetFrost < 10) tft->print(" ");
+          tft->print(targetFrost);
+
+          // Обновляем старое значение
+          lastTargetFrost = targetFrost;
+      }
+
+      // Небольшая задержка для стабильности работы энкодера
+      static unsigned long lastSetFrostLoopTime = 0;
+      if (millis() - lastSetFrostLoopTime < 50) return;
+      lastSetFrostLoopTime = millis();
+ 
+    } 
 // <<< вставляем сюда
-        
+       
  } //<<< вставляем до этой скобки эта скобка закрытие LOOP
 
 
@@ -968,6 +1195,14 @@ void updateSetPageItem(byte itemIndex, bool isSelected) {
       tft->setCursor(190, 91);
       if (targetHyst < 10) tft->print(" ");
       tft->print(targetHyst);tft->print((char)248);tft->print("C");
+
+      // Печатаем значение установленного разморозки из EEPROM 
+      tft->setTextColor(COLOR_WHITE);     // ставим белый цвет
+      tft->setCursor(192, 111);
+      if (targetHyst < 10) tft->print(" ");
+      tft->print(targetFrost);tft->print((char)248);tft->print("C");
+
+      
       
       
   // --- ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ПУНКТА МЕНЮ В SET_PAGE (ТОЛЬКО ВЫДЕЛЕНИЕ) ---
@@ -1457,6 +1692,43 @@ void drawSetHystpage() {
       break;
 
     case HYST_EXIT:
+      // Рисуем кнопку текущим цветом
+      tft->drawRect(112, 190, 85, 40, (isSelected ? COLOR_YELLOW : COLOR_BACKGROUND));
+      break;
+  }
+}
+
+// --- ОТРИСОВКА СТРАНИЦЫ УСТАНОВКИ ПОДДЕРЖАНИЯ ТЕМПЕРАТУРЫ ---
+void drawSetFrostpage() {
+    // Очищаем экран перед отрисовкой
+    tft->fillScreen(COLOR_BACKGROUND); 
+
+    // ---  ЗАГОЛОВОК  ---
+    tft->setTextSize(3);
+    tft->setTextColor(COLOR_WHITE);
+    tft->setCursor(35, 30); // Координаты по центру сверху
+    tft->print("SET DEFROSTING"); 
+    
+    tft->setTextSize(3);
+    tft->setCursor(122, 200);
+    tft->print("EXIT");
+    
+    // Отрисовываем все пункты меню, выделяя текущий
+  for (byte i = SET_FROST; i <= FROST_EXIT; i++) {
+    updateSetFrostItem(i, (i == selectedFrostItem));
+  }
+}
+
+// --- ФУНКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ПУНКТА В МЕНЮ SET_FROST ---
+   void updateSetFrostItem(byte itemIndex, bool isSelected) {
+ 
+  // --- РИСУЕМ ЭЛЕМЕНТ В ЗАВИСИМОСТИ ОТ itemIndex ---
+  switch (itemIndex) {
+    case SET_FROST:
+      tft->drawRect(103, 103, 105, 48, (isSelected ? COLOR_YELLOW : COLOR_BACKGROUND));
+      break;
+
+    case FROST_EXIT:
       // Рисуем кнопку текущим цветом
       tft->drawRect(112, 190, 85, 40, (isSelected ? COLOR_YELLOW : COLOR_BACKGROUND));
       break;
