@@ -1461,11 +1461,12 @@ if (t16MinuteOFF4 >= 0 && t16MinuteOFF4 <= 59) {
             t2MinuteON1=0;
         } else if (selectedTimerItem == TIMER_H_OFF) {
             timerMenuState = TIMER_OFF_EDITING_H;
+            t3HourOFF1=0;
         } else if (selectedTimerItem == TIMER_M_OFF) {
             timerMenuState = TIMER_OFF_EDITING_M;
+            t4MinuteOFF1=0;
         }
     }
-
             // --- ВЫХОД ИЗ РЕЖИМА РЕДАКТИРОВАНИЯ ---
             // Если мы УЖЕ находимся в режиме редактирования этого же пункта, выходим
           else if ((selectedTimerItem == TIMER_H_ON && timerMenuState == TIMER_ON_EDITING_H) ||
@@ -1475,8 +1476,6 @@ if (t16MinuteOFF4 >= 0 && t16MinuteOFF4 <= 59) {
             // Выходим из режима редактирования
             timerMenuState = TIMER_NAVIGATING; }
           }
-            // Выходим из блока клика, чтобы не сработал код для SAVE/CLEAR ниже
-            //return; }
          }
      
             // --- ЛОГИКА ВРАЩЕНИЯ ЭНКОДЕРА В РЕЖИМЕ РЕДАКТИРОВАНИЯ ЧАСОВ ВКЛЮЧЕНИЯ ---
@@ -1496,7 +1495,6 @@ if (t16MinuteOFF4 >= 0 && t16MinuteOFF4 <= 59) {
             t1HourON1--;}
           } 
         }
-        //}
             // --- ЛОГИКА ВРАЩЕНИЯ ЭНКОДЕРА В РЕЖИМЕ РЕДАКТИРОВАНИЯ МИНУТ ВКЛЮЧЕНИЯ ---
         else if (timerMenuState == TIMER_ON_EDITING_M) {
             // Проверяем вращение ВПРАВО
@@ -1506,7 +1504,6 @@ if (t16MinuteOFF4 >= 0 && t16MinuteOFF4 <= 59) {
             if (t2MinuteON1 < 59) {
             t2MinuteON1++;}
            }
-
             // Проверяем вращение ВЛЕВО
             if (enc1.isLeft()) {
             timerInactivityTimer = millis(); // Сбрасываем таймер
@@ -1514,9 +1511,9 @@ if (t16MinuteOFF4 >= 0 && t16MinuteOFF4 <= 59) {
             if (t2MinuteON1 > 0) {
             t2MinuteON1--;}
            } 
-           
          }
-       
+
+          //--- Логика отрисовки установки часов таймера включения
          tft->setTextSize(2);
           tft->setTextColor( (timerMenuState == TIMER_ON_EDITING_H) ? COLOR_YELLOW : COLOR_WHITE );
           tft->setCursor(189, 90);
@@ -1549,7 +1546,8 @@ if (t16MinuteOFF4 >= 0 && t16MinuteOFF4 <= 59) {
           tft->print("--");}
           lasteditHourON = t1HourON1; // Обновляем для следующего сравнения
           }
-           // --- ЛОГИКА ДЛЯ МИНУТ ---
+  
+           // --- ЛОГИКА  ДЛЯ установки МИНУТ таймера включения ---
           tft->setTextSize(2);
           tft->setTextColor( (timerMenuState == TIMER_ON_EDITING_M) ? COLOR_YELLOW : COLOR_WHITE );
           tft->setCursor(240, 90);         
@@ -1582,16 +1580,123 @@ if (t16MinuteOFF4 >= 0 && t16MinuteOFF4 <= 59) {
           tft->print("--");}
           lasteditMinuteON = t2MinuteON1;
          }
+
+// ==============================================================================       
+//----------------------------------------------------------------------------
+        // --- ЛОГИКА ВРАЩЕНИЯ ЭНКОДЕРА В РЕЖИМЕ РЕДАКТИРОВАНИЯ ЧАСОВ ВЫКЛЮЧЕНИЯ ---
+        else if (timerMenuState == TIMER_OFF_EDITING_H) {
+            // Проверяем вращение ВПРАВО
+            if (enc1.isRight()) {
+            timerInactivityTimer = millis(); // Сбрасываем таймер
+            // Увеличиваем значение, но не более 23
+            if (t3HourOFF1 < 23) {
+            t3HourOFF1++; }
+          }
+            // Проверяем вращение ВЛЕВО
+            if (enc1.isLeft()) {
+            timerInactivityTimer = millis(); // Сбрасываем таймер
+            // Уменьшаем значение, но не менее 0
+            if (t3HourOFF1 > 0) {
+            t3HourOFF1--;}
+          } 
+        }
+        // --- ЛОГИКА ВРАЩЕНИЯ ЭНКОДЕРА В РЕЖИМЕ РЕДАКТИРОВАНИЯ МИНУТ ВЫКЛЮЧЕНИЯ ---
+        else if (timerMenuState == TIMER_OFF_EDITING_M) {
+            // Проверяем вращение ВПРАВО
+            if (enc1.isRight()) {
+            timerInactivityTimer = millis(); // Сбрасываем таймер
+            // Увеличиваем значение, но не более 59
+            if (t4MinuteOFF1 < 59) {
+            t4MinuteOFF1++;}
+           }
+            // Проверяем вращение ВЛЕВО
+            if (enc1.isLeft()) {
+            timerInactivityTimer = millis(); // Сбрасываем таймер
+            // Уменьшаем значение, но не менее 0
+            if (t4MinuteOFF1 > 0) {
+            t4MinuteOFF1--;}
+           } 
+         }
+
+           //--- Логика отрисовки установки часов таймера вЫключения
+         tft->setTextSize(2);
+          tft->setTextColor( (timerMenuState == TIMER_OFF_EDITING_H) ? COLOR_YELLOW : COLOR_WHITE );
+          tft->setCursor(189, 140);
+          if (t3HourOFF1 >= 0 && t3HourOFF1 <= 23) {
+          if (t3HourOFF1 < 10) tft->print("0");
+          tft->print(t3HourOFF1);
+          } else {
+          tft->setCursor(189, 140);
+          tft->print("--");}
+          //tft->print(t1HourON1);
+          if (t3HourOFF1 != lasteditHourOFF) {
+          //  СТИРАЕМ СТАРЫЕ значения цветом фона
+          tft->setTextSize(2);
+          tft->setTextColor(COLOR_BACKGROUND);
+          tft->setCursor(189, 140);
+          tft->print("--");
+          tft->setCursor(189, 140);
+          if (lasteditHourOFF < 10) tft->print("0");
+          tft->print(lasteditHourOFF);
           
-         /* static unsigned long lastSetTimeLoopTime = 0;
-          if (millis() - lastSetTimeLoopTime < 50) return;
-          lastSetTimeLoopTime = millis();*/
-            
-            
+          // РИСУЕМ НОВЫЕ ЧАСЫ. Цвет зависит от режима.
+          tft->setTextSize(2);
+          tft->setTextColor( (timerMenuState == TIMER_OFF_EDITING_H) ? COLOR_YELLOW : COLOR_WHITE );
+          tft->setCursor(189, 140);
+          if (t3HourOFF1 >= 0 && t3HourOFF1 <= 23) {
+          if (t3HourOFF1 < 10) tft->print("0");
+          tft->print(t3HourOFF1);
+          } else {
+          tft->setCursor(189, 140);
+          tft->print("--");}
+          lasteditHourOFF = t3HourOFF1; // Обновляем для следующего сравнения
+          }
+  
+           // --- ЛОГИКА  ДЛЯ установки МИНУТ таймера вЫключения ---
+          tft->setTextSize(2);
+          tft->setTextColor( (timerMenuState == TIMER_OFF_EDITING_M) ? COLOR_YELLOW : COLOR_WHITE );
+          tft->setCursor(240, 140);         
+          if (t4MinuteOFF1 >= 0 && t4MinuteOFF1 <= 59) {
+          if (t4MinuteOFF1 < 10) tft->print("0");
+          tft->print(t4MinuteOFF1);
+          } else {
+          tft->setCursor(240, 140);
+          tft->print("--");}
+          
+      if (t4MinuteOFF1 != lasteditMinuteOFF) {
+          // СТИРАЕМ СТАРЫЕ МИНУТЫ
+          tft->setTextSize(2);
+          tft->setTextColor(COLOR_BACKGROUND);
+          tft->setCursor(240, 140);
+          tft->print("--");
+          tft->setCursor(240, 140);
+          if (lasteditMinuteOFF < 10) tft->print("0");
+          tft->print(lasteditMinuteOFF);
+          
+          // РИСУЕМ НОВЫЕ МИНУТЫ. Цвет зависит от режима.
+          tft->setTextSize(2);
+          tft->setTextColor( (timerMenuState == TIMER_OFF_EDITING_M) ? COLOR_YELLOW : COLOR_WHITE );
+          tft->setCursor(240, 140);         
+          if (t4MinuteOFF1 >= 0 && t4MinuteOFF1 <= 59) {
+          if (t4MinuteOFF1 < 10) tft->print("0");
+          tft->print(t4MinuteOFF1);
+          } else {
+          tft->setCursor(240, 140);
+          tft->print("--");}
+          lasteditMinuteOFF = t4MinuteOFF1;
+         }
+//==========================================================================         
+
+
+
  
-  } 
-// <<< вставляем сюда
-       
+          static unsigned long lastSetTimerLoopTime = 0;
+          if (millis() - lastSetTimerLoopTime < 50) return;
+          lastSetTimerLoopTime = millis();
+            
+            
+    // <<< вставляем сюда
+  }  // Скобка закрытия  if (currentPage == "SET_TIMER_1_PAGE")    
 } //<<< вставляем до этой скобки эта скобка закрытие LOOP
 
 
